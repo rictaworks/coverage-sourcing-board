@@ -16,7 +16,7 @@
 | Canvas の切り抜き・縮小・再エンコード | `src/frontend/lib/image/canvasEncoder.ts`（`CanvasEncoder`、`encodeWithinLimit`） |
 | 特徴量（B2 の関数を呼ぶ） | `src/frontend/lib/image/featureExtractor.ts`（`FeatureExtractor`） |
 | 整形の結果の型と手順（`ImagePreparer`） | `src/frontend/lib/image/preparedImage.ts` |
-| 画面（選ぶ・枠・確定・確かめる） | `src/frontend/components/prepare/`（`ImagePicker`・`CropFrame`・`PreparedPreview`・`PrepareFlow`） |
+| 画面（選ぶ・枠・確定・確かめる） | `src/frontend/components/prepare/`（`ImagePicker`・`CropFrame`・`PreparedPreview`）。`PrepareFlow` は使われないため DELETE/ へ移しました |
 | 投稿の画面 | `src/frontend/app/submit/page.tsx`（整形の手順だけ。入力欄と判定と送信は D4） |
 | 文言 | `src/config/strings/prepare.ts`（`PREPARE_STRINGS`・`PREPARE_ERROR_STRINGS`。文言だけ） |
 | 不要なセグメントの取り除き（バイト列の純粋な関数） | `src/core/jpeg/segmentStripper.ts`（`stripDisallowedSegments`。マーカーの定義は B4 の `markers.ts` と共通） |

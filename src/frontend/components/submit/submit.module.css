@@ -1,0 +1,255 @@
+/* 投稿と判定結果の画面の部品。色は globals.css の :root のトークンだけを使います（ライト固定）。 */
+.flow {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.block {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: var(--color-surface);
+}
+
+.subBlock {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--color-accent);
+}
+
+.subHeading {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text);
+}
+
+.help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.notice {
+  margin: 0;
+  border-left: 4px solid var(--color-accent);
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-surface);
+}
+
+.summary {
+  margin: 0;
+  font-weight: 700;
+}
+
+.field {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.label {
+  font-weight: 700;
+}
+
+.required {
+  margin-left: 0.25rem;
+  color: var(--color-fail);
+  font-weight: 400;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-fail);
+  font-weight: 700;
+}
+
+.fieldset {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.formFields {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.legend {
+  padding: 0;
+  font-weight: 700;
+}
+
+.checkGroup {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.checkLabel {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+}
+
+.checkLabel input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+/* ハニーポット欄は画面の外へ置きます（見えず、読み上げとキーボードの移動の対象からも外します）。 */
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.button,
+.secondaryButton {
+  justify-self: start;
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button {
+  border: 1px solid var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.button:disabled,
+.secondaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.link {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.resultList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resultItem {
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.5rem;
+}
+
+.resultHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+}
+
+.verdictPass,
+.verdictReview,
+.verdictFail {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-weight: 700;
+}
+
+.verdictPass {
+  color: var(--color-pass);
+}
+
+.verdictReview {
+  background-color: var(--color-amber-bg);
+  color: var(--color-review);
+}
+
+.verdictFail {
+  color: var(--color-fail);
+}
+
+.itemName {
+  font-weight: 700;
+}
+
+.resultMessage,
+.fix {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fix {
+  color: var(--color-text-muted);
+}
+
+.serverReasons,
+.subject {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (min-width: 40rem) {
+  .block {
+    padding: 1.25rem;
+  }
+
+  .actions {
+    gap: 0.75rem;
+  }
+}
