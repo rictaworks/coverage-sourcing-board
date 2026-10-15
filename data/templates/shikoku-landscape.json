@@ -1,0 +1,47 @@
+{
+  "id": "shikoku-landscape",
+  "name": "四国 風景写真",
+  "source": "自作。市町村の名称と県の一覧のみ。境界データ（bbox）は含まない。出典の詳細は data/README.md。",
+  "requiredPerCell": 2,
+  "areas": [
+    { "id": "tokushima-01", "prefecture": "tokushima", "label": "徳島市" },
+    { "id": "tokushima-02", "prefecture": "tokushima", "label": "鳴門市" },
+    { "id": "tokushima-03", "prefecture": "tokushima", "label": "小松島市" },
+    { "id": "tokushima-04", "prefecture": "tokushima", "label": "阿南市" },
+    { "id": "tokushima-05", "prefecture": "tokushima", "label": "吉野川市" },
+    { "id": "tokushima-06", "prefecture": "tokushima", "label": "美波町・海陽町" },
+    { "id": "kagawa-01", "prefecture": "kagawa", "label": "高松市" },
+    { "id": "kagawa-02", "prefecture": "kagawa", "label": "丸亀市" },
+    { "id": "kagawa-03", "prefecture": "kagawa", "label": "観音寺市" },
+    { "id": "kagawa-04", "prefecture": "kagawa", "label": "三豊市" },
+    { "id": "kagawa-05", "prefecture": "kagawa", "label": "小豆島町" },
+    { "id": "ehime-01", "prefecture": "ehime", "label": "松山市" },
+    { "id": "ehime-02", "prefecture": "ehime", "label": "今治市" },
+    { "id": "ehime-03", "prefecture": "ehime", "label": "西予市" },
+    { "id": "kochi-01", "prefecture": "kochi", "label": "高知市" },
+    { "id": "kochi-02", "prefecture": "kochi", "label": "室戸市" },
+    { "id": "kochi-03", "prefecture": "kochi", "label": "安芸市" },
+    { "id": "kochi-04", "prefecture": "kochi", "label": "四万十市" },
+    { "id": "kochi-05", "prefecture": "kochi", "label": "土佐清水市" },
+    { "id": "kochi-06", "prefecture": "kochi", "label": "宿毛市" },
+    { "id": "kochi-07", "prefecture": "kochi", "label": "香南市" }
+  ],
+  "periods": [
+    { "id": "spring", "label": "春", "months": [3, 4, 5] },
+    { "id": "summer", "label": "夏", "months": [6, 7, 8] },
+    { "id": "autumn", "label": "秋", "months": [9, 10, 11] },
+    { "id": "winter", "label": "冬", "months": [12, 1, 2] }
+  ],
+  "acceptRule": {
+    "ratio": { "width": 4, "height": 3 },
+    "tolerance": 0.01,
+    "orientation": "landscape",
+    "formats": ["jpeg", "png"],
+    "minShortPx": 800,
+    "blurMin": 30,
+    "dupDistance": 4,
+    "daytimeRequired": true,
+    "maxInputBytes": 5242880,
+    "maxPixels": 40000000
+  }
+}
