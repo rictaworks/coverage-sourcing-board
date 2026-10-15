@@ -9,6 +9,7 @@ import { CAMPAIGN_API_CONFIG } from '../../../src/config/campaignApi';
 import { CAMPAIGN_API_ERROR_MESSAGES } from '../../../src/config/strings/campaignApi';
 import { CAMPAIGN_ERROR_MESSAGES } from '../../../src/config/strings/campaign';
 import { RULE_DEFAULTS } from '../../../src/config/defaults';
+import { CAMPAIGN_SETTINGS_STRINGS } from '../../../src/config/strings/campaignSettings';
 import { CAMPAIGN_SETTINGS_INPUTS as IN } from '../../fixtures/campaign-settings-inputs';
 
 /** テスト用のキャンペーン（2 区分値 × 4 季節）。テンプレートの形を模す。 */
@@ -281,5 +282,29 @@ describe('キャンペーンの API（CampaignApi）', () => {
       .addArea({ areas: [{ prefecture: 'kochi', label: IN.areaKochi }] })
       .catch((caught: unknown) => caught);
     expect(error).toMatchObject({ code: 'area_duplicate', message: CAMPAIGN_API_ERROR_MESSAGES.area_duplicate, status: 409 });
+  });
+});
+
+describe('応答の欠損は代わりの値で隠さず、明示的な例外にします', () => {
+  const builder = new CampaignDraftBuilder();
+
+  it('マスが存在しないエリアを指していると、例外になります', () => {
+    const campaign = sampleCampaign();
+    const broken: CampaignDetailView = {
+      ...campaign,
+      cells: campaign.cells.map((cell, index) => (index === 0 ? { ...cell, areaId: 'missing-area' } : cell)),
+    };
+    const draft = builder.draftFromCampaign(broken);
+    expect(() => builder.validateDraft(broken, draft)).toThrow(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
+  });
+
+  it('マスが存在しない期間を指していると、例外になります', () => {
+    const campaign = sampleCampaign();
+    const broken: CampaignDetailView = {
+      ...campaign,
+      cells: campaign.cells.map((cell, index) => (index === 0 ? { ...cell, periodId: 'missing-period' } : cell)),
+    };
+    const draft = builder.draftFromCampaign(broken);
+    expect(() => builder.validateDraft(broken, draft)).toThrow(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
   });
 });

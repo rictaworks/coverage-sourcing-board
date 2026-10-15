@@ -203,14 +203,6 @@ export class CampaignDraftBuilder {
         ruleFieldErrors[field] = parsed.message;
       }
     }
-    const rule: AcceptRule = {
-      ...campaign.acceptRule,
-      tolerance: (numbers.tolerancePercent ?? 0) / 100,
-      minShortPx: numbers.minShortPx ?? campaign.acceptRule.minShortPx,
-      maxInputBytes: Math.round((numbers.maxInputMegabytes ?? 0) * BYTES_PER_MEGABYTE),
-      maxPixels: Math.round((numbers.maxPixelsTenThousand ?? 0) * PIXELS_PER_TEN_THOUSAND),
-    };
-
     const name = normalizeText(draft.name);
     let nameError: string | null = null;
     if ([...name].length > CAMPAIGN_API_CONFIG.nameMaxChars) {
@@ -219,7 +211,15 @@ export class CampaignDraftBuilder {
     let generalError: string | null = null;
     const hasRuleError = Object.keys(ruleFieldErrors).length > 0;
     const hasError = Object.keys(cellErrors).length > 0 || hasRuleError || nameError !== null;
+    let rule: AcceptRule | null = null;
     if (!hasError) {
+      rule = {
+        ...campaign.acceptRule,
+        tolerance: this.requireNumber(numbers, 'tolerancePercent') / 100,
+        minShortPx: this.requireNumber(numbers, 'minShortPx'),
+        maxInputBytes: Math.round(this.requireNumber(numbers, 'maxInputMegabytes') * BYTES_PER_MEGABYTE),
+        maxPixels: Math.round(this.requireNumber(numbers, 'maxPixelsTenThousand') * PIXELS_PER_TEN_THOUSAND),
+      };
       try {
         defineCampaign(this.domainInput(campaign, name, requiredValues, rule), () => campaign.id);
       } catch (caught) {
@@ -234,7 +234,7 @@ export class CampaignDraftBuilder {
       }
     }
 
-    if (nameError !== null || generalError !== null || hasError) {
+    if (rule === null || nameError !== null || generalError !== null || hasError) {
       return {
         ok: false,
         errors: {
@@ -254,6 +254,15 @@ export class CampaignDraftBuilder {
         acceptRule: rule,
       },
     };
+  }
+
+  /** 検査を通った数値を取り出します。欠けていれば（内部の不整合）、代わりの値を使わず例外にします。 */
+  private requireNumber(numbers: Partial<Record<keyof AcceptRuleDraft, number>>, field: keyof AcceptRuleDraft): number {
+    const value = numbers[field];
+    if (value === undefined) {
+      throw new Error(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
+    }
+    return value;
   }
 
   /** 受入条件の 1 項目を検査します（既定値の範囲の外は保存できません）。 */
@@ -282,11 +291,15 @@ export class CampaignDraftBuilder {
   ): CampaignInput {
     const areaLabels = new Map(campaign.areas.map((area: AreaView) => [area.id, area.label]));
     const periods = new Map(campaign.periods.map((period: PeriodView) => [period.id, seasonOfPeriod(period)]));
-    const required: RequiredEntry[] = campaign.cells.map((cell) => ({
-      area: areaLabels.get(cell.areaId) ?? '',
-      season: periods.get(cell.periodId) ?? 'spring',
-      required: requiredValues[cell.cellId] ?? 0,
-    }));
+    const required: RequiredEntry[] = campaign.cells.map((cell) => {
+      const area = areaLabels.get(cell.areaId);
+      const season = periods.get(cell.periodId);
+      const value = requiredValues[cell.cellId];
+      if (area === undefined || season === undefined || value === undefined) {
+        throw new Error(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
+      }
+      return { area, season, required: value };
+    });
     return {
       name,
       areas: campaign.areas.map((area) => area.label),

@@ -25,6 +25,7 @@ export function AreaAddForm({
   const selectId = useId();
   const inputId = useId();
   const helpId = useId();
+  const errorId = useId();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -79,7 +80,7 @@ export function AreaAddForm({
               value={label}
               disabled={busy}
               aria-invalid={error !== null}
-              aria-describedby={helpId}
+              aria-describedby={error !== null ? `${helpId} ${errorId}` : helpId}
               onChange={(event) => setLabel(event.target.value)}
             />
           </div>
@@ -93,7 +94,7 @@ export function AreaAddForm({
           </button>
           {busy ? <p role="status" className={styles.help}>{CAMPAIGN_SETTINGS_STRINGS.areaAdding}</p> : null}
         </div>
-        {error !== null ? <ErrorMessage message={error} /> : null}
+        {error !== null ? <ErrorMessage id={errorId} message={error} /> : null}
       </form>
     </section>
   );

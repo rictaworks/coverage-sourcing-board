@@ -113,7 +113,7 @@ export function CellRequirementGrid({
                 {campaign.periods.map((period, periodIndex) => {
                   const cell = cellByKey.get(`${area.id}|${period.id}`);
                   if (cell === undefined) {
-                    throw new Error(`cell is missing for ${area.id}|${period.id}`);
+                    throw new Error(CAMPAIGN_SETTINGS_STRINGS.cellMissing(area.id, period.id));
                   }
                   const inputId = `${baseId}-cell-${area.id}-${period.id}`;
                   const errorId = `${inputId}-error`;

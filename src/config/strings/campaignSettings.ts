@@ -62,4 +62,6 @@ export const CAMPAIGN_SETTINGS_STRINGS = {
   saveFailed: 'キャンペーンを保存できませんでした。入力の内容を確かめてから、もう一度お試しください。',
   ruleFieldError: '受入条件の値を確かめてください。',
   statusHeading: '状態',
+  campaignInconsistent: 'キャンペーンの応答に、対応するエリア・季節・必要数のないマスがあります。ページを読み込み直してください。',
+  cellMissing: (areaId: string, periodId: string): string => `マスが見つかりません（${areaId}|${periodId}）。ページを読み込み直してください。`,
 } as const;
