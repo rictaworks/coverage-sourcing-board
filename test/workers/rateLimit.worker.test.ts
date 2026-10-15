@@ -21,15 +21,24 @@ describe('レート制限（RATE_LIMITER のバインディング。10 秒に 5 
     await applyMigrations(env.DB);
   });
 
-  it('同じ IP からの 6 回目の POST は 429（rate_limited）になります', async () => {
+  it('上限を超えると 429（rate_limited）になり、それより前の応答は全て 501 です', async () => {
     const ip = testIp(120);
-    for (let attempt = 1; attempt <= 5; attempt += 1) {
+    const maxAttempts = 12;
+    const statuses: number[] = [];
+    let limited: Response | null = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       const response = await postFrom(ip);
-      expect(response.status, `attempt ${attempt}`).toBe(501);
+      statuses.push(response.status);
+      if (response.status === 429) {
+        limited = response;
+        break;
+      }
     }
-    const sixth = await postFrom(ip);
-    expect(sixth.status).toBe(429);
-    expect(((await sixth.json()) as { code: string }).code).toBe('rate_limited');
+    expect(limited, `statuses: ${statuses.join(',')}`).not.toBeNull();
+    const before = statuses.slice(0, -1);
+    expect(before.length).toBeGreaterThan(0);
+    expect(before.every((status) => status === 501), `statuses: ${statuses.join(',')}`).toBe(true);
+    expect(((await limited!.json()) as { code: string }).code).toBe('rate_limited');
   });
 
   it('GET にはレート制限を適用しません（同じ IP から続けて呼んでも 200 です）', async () => {

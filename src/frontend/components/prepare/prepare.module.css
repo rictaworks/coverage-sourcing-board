@@ -1,0 +1,133 @@
+/* 画像の整形の部品。色は globals.css の :root のトークンだけを使います。 */
+.flow {
+  display: grid;
+  gap: 1rem;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.block {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: var(--color-surface);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--color-accent);
+}
+
+.picker {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+}
+
+.pickerLabel {
+  display: inline-block;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fileInput {
+  max-width: 100%;
+}
+
+.button,
+.secondaryButton {
+  justify-self: start;
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button {
+  border: 1px solid var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.cropArea {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cropTrack {
+  position: relative;
+  width: 100%;
+  max-width: 40rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background-color: var(--color-bg);
+  touch-action: none;
+}
+
+.cropImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+/* 枠の外側は暗くして、残す範囲を分かりやすくします。 */
+.cropFrame {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid var(--color-amber-border);
+  box-shadow: 0 0 0 9999px rgb(28 35 49 / 0.45);
+  cursor: grab;
+}
+
+.cropFrame:active {
+  cursor: grabbing;
+}
+
+.range {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.preview {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.previewImage {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.facts {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--color-text-muted);
+}

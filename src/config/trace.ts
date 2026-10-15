@@ -16,6 +16,7 @@ export const TRACE_NAMES = [
   'classifier.skipped',
   'cron.reset',
   'request.handled',
+  'image.exif_read_failed',
 ] as const;
 
 export const TRACE_FIELD_NAMES = [
@@ -30,6 +31,8 @@ export const TRACE_FIELD_NAMES = [
   'route',
   'status',
   'requestId',
+  /** 失敗の種類の番号（0 その他、1 Error、2 TypeError、3 RangeError）。メッセージは入れない。 */
+  'errorKind',
 ] as const;
 
 export type TraceName = (typeof TRACE_NAMES)[number];

@@ -21,18 +21,18 @@ export type RouteMatch =
   | { readonly kind: 'badPath' }
   | { readonly kind: 'methodNotAllowed' };
 
-/** 未実装の経路のハンドラー（501 と not_implemented を返す）。 */
-export function notImplementedRoute(responder: ApiResponder): RouteHandler {
-  const handler: RouteHandler = async () => responder.error('not_implemented', 501);
-  NOT_IMPLEMENTED_HANDLERS.add(handler);
-  return handler;
-}
+/** 未実装であることを示す印を持つハンドラー。印はハンドラー自身が持つので、モジュール直下に状態を置かない。 */
+export type NotImplementedHandler = RouteHandler & { readonly notImplemented: true };
 
-const NOT_IMPLEMENTED_HANDLERS = new WeakSet<RouteHandler>();
+/** 未実装の経路のハンドラー（501 と not_implemented を返す）。 */
+export function notImplementedRoute(responder: ApiResponder): NotImplementedHandler {
+  const handler: RouteHandler = async () => responder.error('not_implemented', 501);
+  return Object.assign(handler, { notImplemented: true as const });
+}
 
 /** 未実装のハンドラーか。未実装の経路では、セッションを発行しない。 */
 export function isNotImplementedRoute(handler: RouteHandler): boolean {
-  return NOT_IMPLEMENTED_HANDLERS.has(handler);
+  return (handler as Partial<NotImplementedHandler>).notImplemented === true;
 }
 
 /**

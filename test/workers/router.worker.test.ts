@@ -2,6 +2,8 @@ import { SELF, env } from 'cloudflare:test';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { API_ENDPOINTS, type ApiEndpointName } from '../../src/core/api/paths';
 import { testIp, DEVELOPMENT_WEB_ORIGIN, TEST_BASE_URL } from '../fixtures/workerRequests';
+import { isNotImplementedRoute, notImplementedRoute, type RouteHandler } from '../../src/worker/http/router';
+import { ApiResponder } from '../../src/worker/http/responses';
 import { applyMigrations } from '../helpers/d1Migrations';
 
 /** 経路の :id を、テスト用の値に置き換える。 */
@@ -84,5 +86,14 @@ describe('不正なパス（SPEC/worker-base.md）', () => {
     });
     expect(response.status).toBe(400);
     expect(((await response.json()) as { code: string }).code).toBe('invalid_request');
+  });
+
+  it('未実装のハンドラーだけが印を持ち、実装済みのハンドラーは未実装と判定されません', async () => {
+    const responder = new ApiResponder();
+    const stub = notImplementedRoute(responder);
+    const implemented: RouteHandler = async () => new Response('ok');
+    expect(isNotImplementedRoute(stub)).toBe(true);
+    expect(isNotImplementedRoute(implemented)).toBe(false);
+    expect((await stub({} as never)).status).toBe(501);
   });
 });
