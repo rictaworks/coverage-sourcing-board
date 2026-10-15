@@ -55,6 +55,7 @@
 
 - 投入は、固定のシステム用 ID（`TEMPLATE_SESSION_ID`＝`system-template`）の行として作ります。利用者のクエリには含めません。
 - 行の ID は固定です。`INSERT ... ON CONFLICT ... DO UPDATE` で投入するため、2 回実行しても行は重複しません。
+- テンプレートの ID（`shikoku-landscape:` で始まる値）はシステム用の固定値である。利用者のキャンペーンには、テンプレートを複製して新しい ID を付けて使う（C2 の担当）。
 - 文の数は 6 件です（session・campaign・accept_rule・period・area・cell）。
 - 1 文のバインド変数は 100 以下です。エリアと期間は JSON を 1 つの変数で渡し、マスは `INSERT ... SELECT`（エリア × 期間）で作ります。
 - ローカルの確認では、2 回の実行の後も、システム用 ID の行は 1・21・4・84・1 件（必要数の合計は 168）でした。

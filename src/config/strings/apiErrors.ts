@@ -1,5 +1,6 @@
 import type { ApiErrorCode } from '../../core/api/contract';
 
+// 仮置き：「5 MB」「03:00」は直書きの値です。LIMITS との連動は後続の Issue で行います。
 /** API のエラーの文言（です・ます調）。修正の方法が分かるものは、修正の方法を示します。 */
 export const API_ERROR_MESSAGES: Record<ApiErrorCode, string> = {
   invalid_request: '入力の内容を確認してください。入力できる形式や文字数を超えています。',
