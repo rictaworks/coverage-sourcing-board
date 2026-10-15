@@ -73,6 +73,11 @@ export type DraftCheck =
   | { readonly ok: true; readonly request: CampaignSaveRequest }
   | { readonly ok: false; readonly errors: DraftErrors };
 
+/** 保存前の検査の結果。応答の不整合で例外になったときは、画面に出す文言を返します。 */
+export type SaveCheck =
+  | { readonly kind: 'checked'; readonly check: DraftCheck }
+  | { readonly kind: 'failed'; readonly message: string };
+
 /** API の文言を、どの項目の近くに出すか。 */
 export type DraftField = 'name' | 'cells' | 'rule' | 'general';
 
@@ -180,12 +185,28 @@ export class CampaignDraftBuilder {
     return { ok: true, value: { areas: [{ prefecture, label: area.label }] } };
   }
 
+  /** validateDraft を呼び、内部の不整合の例外だけを画面に出す文言にします。それ以外の例外は投げ直します。 */
+  checkForSave(campaign: CampaignDetailView, draft: CampaignDraft): SaveCheck {
+    try {
+      return { kind: 'checked', check: this.validateDraft(campaign, draft) };
+    } catch (caught) {
+      if (caught instanceof Error && caught.message === CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent) {
+        return { kind: 'failed', message: caught.message };
+      }
+      throw caught;
+    }
+  }
+
   /** 下書きを検査し、保存の要求を作ります。項目ごとの文言を返します。 */
   validateDraft(campaign: CampaignDetailView, draft: CampaignDraft): DraftCheck {
     const cellErrors: Record<string, string> = {};
     const requiredValues: Record<string, number> = {};
     for (const cell of campaign.cells) {
-      const parsed = this.parseRequiredInput(draft.requiredByCell[cell.cellId] ?? '');
+      const raw = draft.requiredByCell[cell.cellId];
+      if (raw === undefined) {
+        throw new Error(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
+      }
+      const parsed = this.parseRequiredInput(raw);
       if (parsed.ok) {
         requiredValues[cell.cellId] = parsed.value;
       } else {

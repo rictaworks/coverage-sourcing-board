@@ -308,3 +308,37 @@ describe('応答の欠損は代わりの値で隠さず、明示的な例外に�
     expect(() => builder.validateDraft(broken, draft)).toThrow(CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent);
   });
 });
+
+describe('保存前の検査の例外を文言にする（checkForSave）', () => {
+  const builder = new CampaignDraftBuilder();
+
+  it('応答に欠損があると、例外を投げず、整合の文言を返します', () => {
+    const campaign = sampleCampaign();
+    const broken: CampaignDetailView = {
+      ...campaign,
+      cells: campaign.cells.map((cell, index) => (index === 0 ? { ...cell, areaId: 'missing-area' } : cell)),
+    };
+    const result = builder.checkForSave(broken, builder.draftFromCampaign(broken));
+    expect(result).toEqual({ kind: 'failed', message: CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent });
+  });
+
+  it('下書きに必要数の欄がないと、代わりの値を使わず、整合の文言を返します', () => {
+    const campaign = sampleCampaign();
+    const draft = builder.draftFromCampaign(campaign);
+    const target = campaign.cells[0].cellId;
+    const { [target]: _removed, ...rest } = draft.requiredByCell;
+    expect(() => builder.validateDraft(campaign, { ...draft, requiredByCell: rest })).toThrow(
+      CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent,
+    );
+    expect(builder.checkForSave(campaign, { ...draft, requiredByCell: rest })).toEqual({
+      kind: 'failed',
+      message: CAMPAIGN_SETTINGS_STRINGS.campaignInconsistent,
+    });
+  });
+
+  it('正常なら検査の結果をそのまま返します', () => {
+    const campaign = sampleCampaign();
+    const draft = builder.draftFromCampaign(campaign);
+    expect(builder.checkForSave(campaign, draft)).toEqual({ kind: 'checked', check: builder.validateDraft(campaign, draft) });
+  });
+});

@@ -133,7 +133,12 @@ export function CampaignSettings() {
       return;
     }
     setNotice(null);
-    const check: DraftCheck = builder.validateDraft(campaign, draft);
+    const checked = builder.checkForSave(campaign, draft);
+    if (checked.kind === 'failed') {
+      setErrorText(checked.message);
+      return;
+    }
+    const check: DraftCheck = checked.check;
     if (!check.ok) {
       setErrors(check.errors);
       setErrorText(CAMPAIGN_SETTINGS_STRINGS.saveFailed);
