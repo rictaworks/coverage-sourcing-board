@@ -14,6 +14,7 @@ export const TRACE_NAMES = [
   'submission.rejected',
   'classifier.called',
   'classifier.skipped',
+  'classifier.recordFailed',
   'cron.reset.started',
   'cron.reset.finished',
   'cron.reset.failed',

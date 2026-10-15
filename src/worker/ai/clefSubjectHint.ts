@@ -40,7 +40,7 @@ export type ClefSubjectHintResult =
     }
   | {
       readonly status: 'none';
-      readonly reason: 'limit' | 'failure';
+      readonly reason: 'limit' | 'failure' | 'unavailable';
       readonly notice: string;
       readonly resumeNotice: string | null;
     };
@@ -94,12 +94,21 @@ export class ClefSubjectHint implements SubjectHint {
       const raw = await this.withTimeout(this.options.runner.run(CLASSIFIER_CONFIG.runId, request));
       const parsed = this.parseResponse(raw);
       const usd = estimateCostUsd(parsed.inputTokens, CLASSIFIER_CONFIG.inputUsdPerMillionTokens);
-      await this.options.ledger.record(CLASSIFIER_CONFIG.ledgerKind, { inputTokens: parsed.inputTokens, usd });
+      await this.recordCost(parsed.inputTokens, usd);
       this.options.tracer.summary('classifier.called', { durationMs: Date.now() - startedAt, estimatedCost: usd });
       return this.estimatedResult(parsed.kind, parsed.confidence);
     } catch (error) {
       this.options.tracer.summary('classifier.skipped', this.errorFields(error));
       return this.noneResult('failure');
+    }
+  }
+
+  /** 費用の記録。失敗しても成功した推定は捨てず、種類の番号だけをトレースに残す（件数は予約済みで、上限は超えない）。 */
+  private async recordCost(inputTokens: number, usd: number): Promise<void> {
+    try {
+      await this.options.ledger.record(CLASSIFIER_CONFIG.ledgerKind, { inputTokens, usd });
+    } catch (error) {
+      this.options.tracer.summary('classifier.recordFailed', this.errorFields(error));
     }
   }
 
@@ -190,12 +199,17 @@ export class ClefSubjectHint implements SubjectHint {
     };
   }
 
-  private noneResult(reason: 'limit' | 'failure'): ClefSubjectHintResult {
+  /** 推定なしの結果を作る。表示用の文言を必ず含める。 */
+  static noneResult(reason: 'limit' | 'failure' | 'unavailable'): ClefSubjectHintResult {
     return {
       status: 'none',
       reason,
       notice: SUBJECT_HINT_STRINGS.noneMessage,
       resumeNotice: reason === 'limit' ? SUBJECT_HINT_STRINGS.resumeMessage : null,
     };
+  }
+
+  private noneResult(reason: 'limit' | 'failure'): ClefSubjectHintResult {
+    return ClefSubjectHint.noneResult(reason);
   }
 }

@@ -28,7 +28,7 @@
 - 応答の `answers.subject.choice`（4 つの選択肢のいずれか）と `answers.subject.confidence`（0 から 1）、`usage.input_tokens`（0 以上）を確かめます。形が違えば失敗です（推定値の代用はしません）。
 - 結果の型は `ClefSubjectHintResult`（`SubjectHintResult` の拡張）です。
   - 推定：`status: "estimated"`、`kind`、`confidence`、`model`、`uncertain`、`notice`。確信度が 0.6 未満（`RULE_DEFAULTS.classifyConfidenceMin`）なら `uncertain` が true で、`notice` は「判定が確かでない」です。
-  - 推定なし：`status: "none"`、`reason`（`limit` か `failure`）、`notice`（「被写体の推定はありません」）、`resumeNotice`（上限のときだけ「分類は日本時間の 9 時に再開します。」）。
+  - 推定なし：`status: "none"`、`reason`（`limit`・`failure`・`unavailable`。`unavailable` は AI が無い環境）、`notice`（「被写体の推定はありません」）、`resumeNotice`（上限のときだけ「分類は日本時間の 9 時に再開します。」）。
 - 保存（`CHECK_RESULT` に `verdict=info`）は C3 が行います。この仕様では型と関数までです。
 - 被写体区分は、不合格にも要確認にも使いません（補助のみ）。
 
@@ -38,6 +38,8 @@
 - 予約は 1 文の `INSERT ... ON CONFLICT DO UPDATE ... WHERE count < 上限` です。同時の要求でも上限を超えません。
 - 日付は UTC（`date_utc`、UTC 0 時に数え直す）。JST の 9 時に当たります。
 - 応答が正常なら、`record` で推定費用（入力トークン数 × 単価 ÷ 100 万）を当日の行に加算します。失敗のときは費用を加算しません（トークン数が分からないため。件数は予約の時点で数えています）。
+- `record` が例外を出しても、成功した推定は捨てずに返し、トレース（`classifier.recordFailed`）に例外の種類の番号だけを残します（件数は予約済みのため、上限は超えません）。
+- タイムアウトしても AI の呼び出し自体は中断されませんが、件数は予約済みなので、上限は超えません。
 - DAILY_COUNTER の行は、日次の全削除（C6）の対象にしません。
 
 ## 5. 単価と参照日
@@ -49,14 +51,14 @@
 ## 6. 失敗
 
 - 次の場合は「推定なし（失敗）」を返します。投稿は止めません。
-  - AI のバインディングの例外、タイムアウト（`CLASSIFIER_CONFIG.timeoutMs`、仮の値）、応答の形が違う、画像が data URL でない、撮影月が 1 から 12 でない、台帳の例外。
+  - AI のバインディングの例外、タイムアウト（`CLASSIFIER_CONFIG.timeoutMs`、仮の値）、応答の形が違う、画像が data URL でない、撮影月が 1 から 12 でない、台帳の予約の例外（記録の例外は失敗にしません）。
 - 例外は握りつぶしません。トレース（`classifier.skipped`）に、例外の種類の番号だけを残します（0 その他、1 Error、2 TypeError、3 RangeError）。メッセージ・説明文・画像は残しません。
 - 呼び出しの成功は `classifier.called`（処理時間と推定費用）を残します。
 
 ## 7. 実装の選択
 
 - `subjectHintFactory(env)`：`APP_ENV` を判定し（想定外の値は例外）、`env.AI` が無ければ `NoSubjectHint`、あれば `ClefSubjectHint` を返します。
-- 本番のバインディングは `wrangler.toml` の `env.production` だけにあります。開発では AI が無く、「被写体の推定はありません」になります。
+- 本番のバインディングは `wrangler.toml` の `env.production` だけにあります。開発では AI が無く、`NoSubjectHint` が表示用の文言（「被写体の推定はありません」）を含む推定なし（`unavailable`）を返します。
 
 ## 8. 未確認の事項（人が確かめる）
 

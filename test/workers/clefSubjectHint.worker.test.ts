@@ -248,3 +248,30 @@ describe('subjectHintFactory（AI のバインディングの有無で実装を�
     expect(() => subjectHintFactory({ DB: env.DB, RATE_LIMITER: env.RATE_LIMITER, APP_ENV: 'staging' })).toThrow();
   });
 });
+
+describe('NoSubjectHint（表示用の文言）', () => {
+  it('推定なしの結果が、表示用の文言を持ちます', async () => {
+    const result = await new NoSubjectHint().suggest(THUMB, CAPTION, 5);
+    expect(result).toMatchObject({ status: 'none', notice: SUBJECT_HINT_STRINGS.noneMessage });
+  });
+});
+
+describe('ClefSubjectHint（費用の記録の失敗）', () => {
+  it('record が例外を出しても、成功した結果を返し、記録の失敗をトレースに残します', async () => {
+    const clock = () => new Date('2041-06-01T01:00:00Z');
+    class FailingRecordLedger extends CallLedger {
+      override async record(): Promise<void> {
+        throw new Error('record failed secret-detail');
+      }
+    }
+    const ledger = new FailingRecordLedger(new DailyCounterRepo(env.DB), CLASSIFIER_CONFIG.dailyLimit, clock);
+    const lines: string[] = [];
+    const tracer = new DebugTracer('development', (line) => lines.push(line), clock);
+    const runner = new FakeClefRunner(async () => okResponse('landscape', 0.9));
+    const hint = new ClefSubjectHint({ runner, ledger, tracer });
+    const result = await hint.suggest(THUMB, CAPTION, 5);
+    expect(result).toMatchObject({ status: 'estimated', kind: 'landscape' });
+    expect(lines.some((l) => l.includes('classifier.recordFailed'))).toBe(true);
+    expect(lines.join('\n')).not.toContain('secret-detail');
+  });
+});
