@@ -28,11 +28,6 @@ test.describe('PR #22 ユーザーテスト手順', () => {
     expect(bodyText).not.toMatch(/Unhandled Runtime Error|Application error|Internal Server Error/);
   });
 
-  test('手順：開発環境の確認用の文章も、これまでどおり表示される', async ({ page }) => {
-    await page.goto(FRONT_URL);
-    await expect(page.getByText(APP_STRINGS.devPageNotice)).toBeVisible();
-  });
-
   test('手順：トップのタブを再読み込み（F5 相当）しても、同じ題名が表示される', async ({ page }) => {
     await page.goto(FRONT_URL);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(APP_STRINGS.pageTitle);

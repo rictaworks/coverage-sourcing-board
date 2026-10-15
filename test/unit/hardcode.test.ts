@@ -180,6 +180,16 @@ describe('JapaneseLiteralScanner（検査器そのもの）', () => {
     expect(scanner.scanProject(root).map((v) => v.file).sort()).toEqual(['src/core/test/fixtures/deep.ts', 'test/unit/a.test.ts']);
   });
 
+  it('src/frontend/.next と src/frontend/out（ビルド成果物）は除外し、ほかの階層の同名フォルダは検査します', () => {
+    const root = mkdtempSync(join(tmpdir(), 'hardcode-'));
+    mkdirSync(join(root, 'test'), { recursive: true });
+    for (const dir of ['src/frontend/.next', 'src/frontend/out', 'src/core/out', 'src/frontend/app/out']) {
+      mkdirSync(join(root, dir), { recursive: true });
+      writeFileSync(join(root, dir, 'built.js'), "export const a = '表示';");
+    }
+    expect(scanner.scanProject(root).map((v) => v.file).sort()).toEqual(['src/core/out/built.js', 'src/frontend/app/out/built.js']);
+  });
+
   it('既存の日本語の表示文（画面の文言）を見逃しません', () => {
     const source = "export const Page = () => <h1>{'素材調達ボード'}</h1>;\nexport const msg = 'エラーが発生しました';";
     expect(scanner.scanSource('src/frontend/app/page.tsx', source)).toHaveLength(2);

@@ -1,0 +1,60 @@
+.error {
+  border: 1px solid var(--color-fail);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.errorHeading {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  color: var(--color-fail);
+}
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.dialog::backdrop {
+  background-color: rgb(28 35 49 / 0.45);
+}
+
+.dialogTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 2.75rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid var(--color-accent);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.secondaryButton {
+  border: 1px solid var(--color-accent);
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+}

@@ -161,6 +161,11 @@ describe('defineCampaign（キャンペーンの定義）', () => {
     expect(errorCodeOf(() => campaign.cell(CAMPAIGN_INPUTS.anan, SEASON_KEYS.spring))).toBe('CELL_NOT_FOUND');
   });
 
+  it('Campaign.cell は、不正な季節を拒否します（SEASON_INVALID）', () => {
+    const campaign = defineCampaign(baseInput(), fixedId);
+    expect(errorCodeOf(() => campaign.cell(CAMPAIGN_INPUTS.anan, 'monsoon'))).toBe('SEASON_INVALID');
+  });
+
   it('例外のコードに対応する表示用の文言が、設定にあります', () => {
     expect(CAMPAIGN_ERROR_MESSAGES.AREA_DUPLICATE.length).toBeGreaterThan(0);
     expect(CAMPAIGN_ERROR_MESSAGES.RULE_INVALID.length).toBeGreaterThan(0);

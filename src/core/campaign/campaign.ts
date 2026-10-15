@@ -2,7 +2,7 @@ import { normalizeText } from '../text/normalize';
 import type { AcceptRule } from '../types';
 import type { Area } from './area';
 import { Cell } from './cell';
-import { CampaignError, type Period, type Season } from './period';
+import { CampaignError, Period } from './period';
 
 /** キャンペーン。区分値・季節・マスと受入条件を持ちます。作成は defineCampaign で行います。 */
 export class Campaign {
@@ -34,7 +34,7 @@ export class Campaign {
 
   /** 区分値（表記ゆれを含んでよい）と季節からマスを返します。無ければ例外にします。 */
   cell(areaLabel: string, season: string): Cell {
-    const cell = this.cellsById.get(Cell.idOf(normalizeText(areaLabel), season as Season));
+    const cell = this.cellsById.get(Cell.idOf(normalizeText(areaLabel), Period.fromSeason(season).season));
     if (cell === undefined) {
       throw new CampaignError('CELL_NOT_FOUND');
     }
