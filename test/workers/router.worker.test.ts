@@ -51,7 +51,8 @@ describe('ルーター（SPEC/worker-base.md）', () => {
   it('paths の全経路が登録されています（未実装は 501 と not_implemented）', async () => {
     const entries = Object.entries(API_ENDPOINTS) as [ApiEndpointName, { method: string; path: string }][];
     // C2 が実装したキャンペーンと充足の経路は、501 ではなくなる（別のテストで確かめる）。
-    const implemented = new Set<ApiEndpointName>(['health', 'session', 'campaignGet', 'campaignPut', 'campaignTemplate', 'campaignAreas', 'coverage']);
+    // C3 が実装した投稿の受け取り（POST /api/submissions）も、501 ではなくなる（test/workers/submissions.worker.test.ts で確かめる）。
+    const implemented = new Set<ApiEndpointName>(['health', 'session', 'campaignGet', 'campaignPut', 'campaignTemplate', 'campaignAreas', 'coverage', 'submissionCreate']);
     let seed = 110;
     for (const [name, endpoint] of entries) {
       if (implemented.has(name)) {

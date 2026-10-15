@@ -21,7 +21,7 @@ describe('レート制限（RATE_LIMITER のバインディング。10 秒に 5 
     await applyMigrations(env.DB);
   });
 
-  it('上限を超えると 429（rate_limited）になり、それより前の応答は全て 501 です', async () => {
+  it('上限を超えると 429（rate_limited）になり、それより前の応答は全て 400（形式の検査）です', async () => {
     const ip = testIp(120);
     const maxAttempts = 12;
     const statuses: number[] = [];
@@ -37,7 +37,7 @@ describe('レート制限（RATE_LIMITER のバインディング。10 秒に 5 
     expect(limited, `statuses: ${statuses.join(',')}`).not.toBeNull();
     const before = statuses.slice(0, -1);
     expect(before.length).toBeGreaterThan(0);
-    expect(before.every((status) => status === 501), `statuses: ${statuses.join(',')}`).toBe(true);
+    expect(before.every((status) => status === 400), `statuses: ${statuses.join(',')}`).toBe(true);
     expect(((await limited!.json()) as { code: string }).code).toBe('rate_limited');
   });
 
@@ -59,7 +59,7 @@ describe('レート制限（RATE_LIMITER のバインディング。10 秒に 5 
       }),
       { ...env, RATE_LIMITER: binding },
     );
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(400);
     expect(binding.keys).toHaveLength(1);
   });
 

@@ -1,4 +1,6 @@
 import { API_ENDPOINTS } from '../core/api/paths';
+import { API_ERROR_CODES } from '../core/api/contract';
+import { REASON } from '../core/validation/reasonCodes';
 
 /**
  * デバッグのトレースで使える name とフィールド名の許可リスト。
@@ -38,6 +40,10 @@ export const TRACE_FIELD_NAMES = [
   'requestId',
   /** 失敗の種類の番号（0 その他、1 Error、2 TypeError、3 RangeError）。メッセージは入れない。 */
   'errorKind',
+  /** 投稿の拒否の種類（API のエラーのコード。上限による拒否はここで storage_paused か daily_limit_reached になる）。 */
+  'failureCode',
+  /** 不合格の理由のコード（reasonCodes.ts の値）。 */
+  'reasonCode',
 ] as const;
 
 export type TraceName = (typeof TRACE_NAMES)[number];
@@ -60,6 +66,8 @@ export const TRACE_LABELS = [
   ...TRACE_METHOD_LABELS,
   ...Object.values(API_ENDPOINTS).map((endpoint) => endpoint.path),
   TRACE_ROUTE_UNMATCHED,
+  ...API_ERROR_CODES,
+  ...Object.values(REASON),
 ] as const;
 
 export type TraceLabel = (typeof TRACE_LABELS)[number];

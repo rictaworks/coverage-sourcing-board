@@ -121,7 +121,7 @@ export class WorkerApp {
       health,
       session,
       ...campaignHandlers(this.responder),
-      ...submissionHandlers(this.responder),
+      ...submissionHandlers(this.responder, this.traceSink),
       ...reviewHandlers(this.responder),
     };
     return handlers;
