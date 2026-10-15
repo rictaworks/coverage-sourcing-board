@@ -15,7 +15,7 @@
 | レート制限 | `src/worker/security/rateLimit.ts`（`RateLimitGuard`） |
 | SHA-256（Cookie と IP のハッシュ） | `src/worker/security/sha256.ts` |
 | 機能ごとの未実装のハンドラー | `src/worker/routes/campaign.ts`・`submissions.ts`・`review.ts` |
-| 日次の全削除（未実装） | `src/worker/cron/dailyPurge.ts` |
+| 日次の全削除（C6 で実装済み。詳細は `SPEC/daily-purge.md`） | `src/worker/cron/dailyPurge.ts` |
 | 被写体の推定（常に「推定なし」） | `src/worker/ai/noSubjectHint.ts`・`subjectHintFactory.ts` |
 | 設定（Cookie 名・有効期間・開発の Origin） | `src/config/worker.ts` |
 | 文言（基盤のエラーと例外） | `src/config/strings/worker.ts` |
@@ -73,7 +73,6 @@
 
 - トレース：要求ごとに 1 件（`request.handled`）を残します。値はメソッド、経路の型（`/api/review/:id/accept` のようなテンプレート。一致しない場合は `unmatched`）、状態コード、処理時間（ミリ秒）だけです。IP・Cookie・Origin・画像・説明文は含めません。文字列の値は `TRACE_LABELS` の既定の名前だけを受け付けます。要求 ID は出していません。
 - 不正なパス（不正な % の並び）は 400（`invalid_request`）を返します。
-- 日次の全削除（requirements 3.9）：C6 が実装します。現在は例外を投げます。
 - 被写体の推定：`subjectHintFactory` は常に `NoSubjectHint`（status が none）を返します。AI のバインディングの実装は C4 が行います。
 - 基盤のエラーの符号（`not_implemented`・`method_not_allowed`・`origin_forbidden`）は、`src/core/api/contract.ts` の `API_ERROR_CODES` にありません。基盤の内部で定義しています（`src/worker/http/responses.ts`）。契約に含めるかは人が決めてください。
 

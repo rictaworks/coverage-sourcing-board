@@ -11,7 +11,7 @@ import { SessionService } from './session/sessionService';
 import { campaignHandlers } from './routes/campaign';
 import { submissionHandlers } from './routes/submissions';
 import { reviewHandlers } from './routes/review';
-import { DailyPurge } from './cron/dailyPurge';
+import { dailyPurge } from './cron/dailyPurge';
 import { DebugTracer } from '../core/trace';
 import { API_ENDPOINTS } from '../core/api/paths';
 import { TRACE_METHOD_LABELS, TRACE_ROUTE_UNMATCHED, type TraceLabel } from '../config/trace';
@@ -132,7 +132,7 @@ export default {
   fetch(request: Request, env: WorkerBindings): Promise<Response> {
     return new WorkerApp().fetch(request, env);
   },
-  scheduled(_controller: ScheduledController, env: WorkerBindings): Promise<void> {
-    return new DailyPurge(env.DB).run();
+  async scheduled(_controller: ScheduledController, env: WorkerBindings): Promise<void> {
+    await dailyPurge(env);
   },
 } satisfies ExportedHandler<WorkerBindings>;
