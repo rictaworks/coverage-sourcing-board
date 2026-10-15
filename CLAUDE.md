@@ -82,7 +82,7 @@ issue → setting & coding → security review → add, commit, push → reviewe
 ## 5. Git の運用
 
 - `main` 上でのコードの作業は禁止です。`src/**` の変更は必ず PR を作成し、直接 push はしません。
-- `main` へ直接 push してよいのは、`src/**` 以外の文書（README.md、CLAUDE.md、requirements.md、SPEC/、TASKS/ など）だけです。
+- `main` へ直接 push してよいのは、`src/**` 以外の文書（README.md、CLAUDE.md、requirements.md、SPEC/、TASKS/ など）だけです。`main` のブランチ保護は設定しません（本人の決定）。`src/**` を PR 以外で変更しない運用は、この規則とローカルのフックで守ります。
 - コミットの作者は、このリポジトリの git 設定（user.name・user.email）に従います。個人のメールアドレスは、リポジトリの文書に書きません。
 - commit の前に、`git config user.email` が本人の公開用のアドレスと一致することを確認します。グローバルの設定は変えません。
 - force push と履歴の書き換えはしません。
@@ -158,7 +158,6 @@ PR に投稿するときは、フッターにモデル名を書きます。
 
 ## 13. 未決の事項
 
-- CI（テストの自動実行）の設定。
 - テーマの選定。
 - 市町村の境界データの出典とライセンス。
 - 認証がないため、採用・差し戻しを誰でも操作できます（デモ版の既知の制約）。投稿の頻度の制限（requirements.md 3.8）が実装されていることを確認します。
