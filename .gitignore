@@ -82,3 +82,8 @@ coverage/
 
 # --- Cloudflare Workers（ローカルの状態） ---
 .wrangler/
+
+# --- Next.js が dev で再生成するファイル（追跡しない） ---
+# next dev が AI エージェントを検出すると、毎回作り直すため
+/src/frontend/AGENTS.md
+/src/frontend/CLAUDE.md
