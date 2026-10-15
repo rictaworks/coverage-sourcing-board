@@ -14,6 +14,8 @@ export const LIMITS = {
   dailyClassifyCalls: 2000,
   /** 地点名（市町村名を含めて 20 字以内）。 */
   spotNameMaxChars: 20,
+  /** 仮の値（区分値の長さの上限。requirements に数値がない）。 */
+  areaLabelMaxChars: 40,
   /** 説明文（60 字以内）。 */
   captionMaxChars: 60,
   /** 仮の値（差し戻しの自由記述の上限。requirements に数値がない）。 */
