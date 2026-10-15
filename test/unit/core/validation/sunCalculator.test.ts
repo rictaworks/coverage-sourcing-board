@@ -53,6 +53,17 @@ describe('SunCalculator（日の出と日の入りの近似）', () => {
     expect(minutesApart(times.sunset as Date, jst(date, sunset))).toBeLessThanOrEqual(10);
   });
 
+  it.each(NAOJ_REFERENCE)('高松の $date の日の出と日の入りは、SPEC の表の値と 1 分以内です', ({ date, sunrise, sunset }) => {
+    if (TAKAMATSU === undefined) {
+      throw new Error('The Takamatsu coordinates are missing.');
+    }
+    const times = calculator.sunTimes(jst(date, '12:00'), TAKAMATSU.lat, TAKAMATSU.lng);
+    expect(times.sunrise).not.toBeNull();
+    expect(times.sunset).not.toBeNull();
+    expect(minutesApart(times.sunrise as Date, jst(date, sunrise))).toBeLessThanOrEqual(1);
+    expect(minutesApart(times.sunset as Date, jst(date, sunset))).toBeLessThanOrEqual(1);
+  });
+
   it('夏至の正午（JST）は昼間、午前 2 時は夜です', () => {
     expect(calculator.isDaytime(jst('2026-06-21', '12:00'), 34.3428, 134.0466)).toBe(true);
     expect(calculator.isDaytime(jst('2026-06-21', '02:00'), 34.3428, 134.0466)).toBe(false);
