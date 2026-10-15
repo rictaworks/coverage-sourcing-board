@@ -20,6 +20,8 @@ export default defineConfig({
         plugins: [cloudflareTest({ wrangler: { configPath: './wrangler.toml' } })],
         test: {
           name: 'workers',
+          // workers のテストは並列実行で遅くなるため、時間の上限だけを延ばす（テストの内容は変えない）。
+          testTimeout: 30_000,
           include: WORKER_TEST_PATTERNS,
           exclude: ['node_modules'],
         },

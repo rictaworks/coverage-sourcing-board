@@ -8,7 +8,7 @@ export type WorkerErrorCode = (typeof WORKER_ERROR_CODES)[number];
 export type ResponseErrorCode = ApiErrorCode | WorkerErrorCode;
 
 /**
- * API の応答を作る。すべての応答に nosniff と no-store を付け、CORS の許可ヘッダーは付けない。
+ * API の応答を作る。すべての応答に nosniff と no-store（既にハンドラーが Cache-Control を付けていれば、それを残す）を付け、CORS の許可ヘッダーは付けない。
  */
 export class ApiResponder {
   json(body: unknown, status: number = 200): Response {
@@ -24,7 +24,9 @@ export class ApiResponder {
   finish(response: Response, setCookie: string | null): Response {
     const headers = new Headers(response.headers);
     headers.set('x-content-type-options', 'nosniff');
-    headers.set('cache-control', 'no-store');
+    if (!headers.has('cache-control')) {
+      headers.set('cache-control', 'no-store');
+    }
     if (setCookie !== null) {
       headers.append('set-cookie', setCookie);
     }
