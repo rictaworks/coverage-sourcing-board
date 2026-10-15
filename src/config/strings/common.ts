@@ -6,6 +6,7 @@ export const COMMON_STRINGS = {
   loading: '読み込み中です。しばらくお待ちください。',
   errorHeading: 'エラーが発生しました。',
   errorInvalidTraceName: 'トレースの name が許可リストにありません。',
+  errorInvalidTraceValue: 'トレースの文字列の値が許可リストにありません。',
   errorInvalidTraceField: 'トレースのフィールド名が許可リストにありません。',
   errorInvalidAppEnv: 'APP_ENV の値が正しくありません。development か production を指定してください。',
 } as const;

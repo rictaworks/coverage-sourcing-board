@@ -28,8 +28,8 @@ export const API_ERROR_CODES = [
 export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
 
 /** エラー応答の本文。message は表示用の文言（src/config/strings/apiErrors.ts）。 */
-export interface ApiErrorBody {
-  readonly code: ApiErrorCode;
+export interface ApiErrorBody<Code extends string = ApiErrorCode> {
+  readonly code: Code;
   readonly message: string;
 }
 

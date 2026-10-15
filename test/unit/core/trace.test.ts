@@ -33,11 +33,11 @@ describe('DebugTracer（デバッグのトレース）', () => {
     expect(JSON.parse(lines[0]).ts).toBe('2026-10-16T12:00:00.000+09:00');
   });
 
-  it('値は数値・真偽値・null だけを受け付けます（個人情報や秘密値を渡せない型）', () => {
+  it('値は数値・真偽値・null・許可リストの名前だけを受け付けます（個人情報や秘密値を渡せない型）', () => {
     const { tracer, lines } = createTracer('development');
     tracer.summary(TRACE_NAMES[0], { [TRACE_FIELD_NAMES[0]]: 1, [TRACE_FIELD_NAMES[1]]: true, [TRACE_FIELD_NAMES[2]]: null });
-    // @ts-expect-error 文字列（IP・説明文など）は型で拒否します
-    tracer.summary(TRACE_NAMES[0], { [TRACE_FIELD_NAMES[0]]: '203.0.113.1' });
+    // @ts-expect-error 許可リストにない文字列（IP・説明文など）は型と実行時の両方で拒否します
+    expect(() => tracer.summary(TRACE_NAMES[0], { [TRACE_FIELD_NAMES[0]]: '203.0.113.1' })).toThrow(COMMON_STRINGS.errorInvalidTraceValue);
     expect(JSON.parse(lines[0]).fields).toEqual({
       [TRACE_FIELD_NAMES[0]]: 1,
       [TRACE_FIELD_NAMES[1]]: true,
@@ -72,5 +72,19 @@ describe('DebugTracer（デバッグのトレース）', () => {
     expect(new Set(TRACE_FIELD_NAMES).size).toBe(TRACE_FIELD_NAMES.length);
     expect(TRACE_NAMES.length).toBeGreaterThanOrEqual(2);
     expect(TRACE_FIELD_NAMES.length).toBeGreaterThanOrEqual(3);
+  });
+  it('要求のトレースでは、許可リスト（TRACE_LABELS）にある名前の文字列だけを値にできます', () => {
+    const { tracer, lines } = createTracer('production');
+    tracer.summary('request.handled', { method: 'GET', route: '/api/review/:id/accept', status: 200, durationMs: 3 });
+    expect(JSON.parse(lines[0]).fields).toEqual({ method: 'GET', route: '/api/review/:id/accept', status: 200, durationMs: 3 });
+  });
+
+  it('許可リストにない文字列の値（実際の ID・IP など）は、実行時に拒否します', () => {
+    const { tracer, lines } = createTracer('production');
+    expect(() =>
+      // @ts-expect-error 許可リストにない文字列は型で拒否します
+      tracer.summary('request.handled', { route: '/api/submissions/abc123/image' }),
+    ).toThrow(COMMON_STRINGS.errorInvalidTraceValue);
+    expect(lines).toHaveLength(0);
   });
 });
