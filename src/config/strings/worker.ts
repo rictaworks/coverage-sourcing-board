@@ -15,6 +15,5 @@ export const WORKER_STRINGS = {
   errorSessionCountMissing: 'キャンペーンの数を取得できませんでした。',
   errorSessionMissing: 'セッションが解決されていない経路が、セッションを使おうとしました。',
   errorRouteNotRegistered: 'API の経路に、ハンドラーが登録されていません。',
-  errorDailyPurgeNotImplemented: '日次の全削除は、まだ実装されていません（C6 で実装します）。',
   logUnhandledError: '未処理の例外です（例外の種類のみを記録します）。',
 } as const;

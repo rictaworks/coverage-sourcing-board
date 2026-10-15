@@ -14,7 +14,9 @@ export const TRACE_NAMES = [
   'submission.rejected',
   'classifier.called',
   'classifier.skipped',
-  'cron.reset',
+  'cron.reset.started',
+  'cron.reset.finished',
+  'cron.reset.failed',
   'request.handled',
   'image.exif_read_failed',
 ] as const;
@@ -24,6 +26,8 @@ export const TRACE_FIELD_NAMES = [
   'blurScore',
   'flag',
   'count',
+  /** 1 回の実行で batch に渡した文の数。 */
+  'queryCount',
   'byteLength',
   'durationMs',
   'estimatedCost',
