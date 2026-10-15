@@ -50,8 +50,22 @@ describe('ルーター（SPEC/worker-base.md）', () => {
 
   it('paths の全経路が登録されています（未実装は 501 と not_implemented）', async () => {
     const entries = Object.entries(API_ENDPOINTS) as [ApiEndpointName, { method: string; path: string }][];
-    // C2 が実装したキャンペーンと充足の経路は、501 ではなくなる（別のテストで確かめる）。
-    const implemented = new Set<ApiEndpointName>(['health', 'session', 'campaignGet', 'campaignPut', 'campaignTemplate', 'campaignAreas', 'coverage']);
+    // C2 が実装したキャンペーンと充足、C5 が実装した審査と投稿の参照の経路は、501 ではなくなる（別のテストで確かめる）。
+    const implemented = new Set<ApiEndpointName>([
+      'health',
+      'session',
+      'campaignGet',
+      'campaignPut',
+      'campaignTemplate',
+      'campaignAreas',
+      'coverage',
+      'submissionsMine',
+      'submissionImage',
+      'reviewQueue',
+      'reviewAccept',
+      'reviewReturn',
+      'reviewRevoke',
+    ]);
     let seed = 110;
     for (const [name, endpoint] of entries) {
       if (implemented.has(name)) {
@@ -96,5 +110,14 @@ describe('不正なパス（SPEC/worker-base.md）', () => {
     expect(isNotImplementedRoute(stub)).toBe(true);
     expect(isNotImplementedRoute(implemented)).toBe(false);
     expect((await stub({} as never)).status).toBe(501);
+  });
+});
+
+describe('ApiResponder.finish の Cache-Control', () => {
+  it('既に付いている Cache-Control を残し、無ければ no-store にします', () => {
+    const responder = new ApiResponder();
+    const kept = responder.finish(new Response('x', { headers: { 'cache-control': 'private, no-store' } }), null);
+    expect(kept.headers.get('cache-control')).toBe('private, no-store');
+    expect(responder.finish(new Response('x'), null).headers.get('cache-control')).toBe('no-store');
   });
 });

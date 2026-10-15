@@ -20,6 +20,8 @@ export const LIMITS = {
   captionMaxChars: 60,
   /** 仮の値（差し戻しの自由記述の上限。requirements に数値がない）。 */
   returnReasonMaxChars: 200,
+  /** 仮の値（最終確認の要求の本文の上限。バイト数）。 */
+  reviewBodyMaxBytes: 4096,
   /** 仮の値（分類用の縮小画像の最大バイト数。requirements に数値がない）。 */
   classifyImageMaxBytes: 150_000,
 } as const;
