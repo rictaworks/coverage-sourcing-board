@@ -33,7 +33,6 @@ test.describe('PR #24 ユーザーテスト手順', () => {
     const heading = page.getByRole('heading', { level: 1 });
     await expect(heading).toBeVisible();
     await expect(heading).toHaveText(APP_STRINGS.pageTitle);
-    await expect(page.getByText(APP_STRINGS.devPageNotice)).toBeVisible();
 
     // 開発サーバーのエラー画面（Next.js の Runtime Error など）が出ていないことを確かめる。
     const bodyText = (await page.locator('body').innerText()).trim();

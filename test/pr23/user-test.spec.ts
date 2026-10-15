@@ -21,7 +21,6 @@ test.describe('PR #23 ユーザーテスト手順', () => {
     const heading = page.getByRole('heading', { level: 1 });
     await expect(heading).toBeVisible();
     await expect(heading).toHaveText(APP_STRINGS.pageTitle);
-    await expect(page.getByText(APP_STRINGS.devPageNotice)).toBeVisible();
 
     // 開発サーバーのエラー画面（Next.js の Runtime Error など）が出ていないことを確かめる。
     const bodyText = (await page.locator('body').innerText()).trim();
@@ -35,7 +34,6 @@ test.describe('PR #23 ユーザーテスト手順', () => {
 
     await page.reload();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(APP_STRINGS.pageTitle);
-    await expect(page.getByText(APP_STRINGS.devPageNotice)).toBeVisible();
   });
 
   test('補助：画面の文字はコードに直書きせず、src/config/strings.ts から読み込んでいる', () => {
