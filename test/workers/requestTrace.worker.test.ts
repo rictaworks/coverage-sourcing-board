@@ -24,9 +24,18 @@ describe('要求ごとのトレース（SPEC/worker-base.md）', () => {
     expect(lines).toHaveLength(1);
     const line = JSON.parse(lines[0]);
     expect(line.name).toBe('request.handled');
-    expect(Object.keys(line.fields).sort()).toEqual(['durationMs', 'method', 'route', 'status']);
+    expect(Object.keys(line.fields).sort()).toEqual(['durationMs', 'method', 'requestId', 'route', 'status']);
     expect(line.fields).toMatchObject({ method: 'GET', route: '/api/health', status: 200 });
     expect(typeof line.fields.durationMs).toBe('number');
+  });
+
+  it('要求ごとに別の要求 ID（UUID）を付けます', async () => {
+    const first = JSON.parse((await run('/api/health', 164)).lines[0]);
+    const second = JSON.parse((await run('/api/health', 165)).lines[0]);
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+    expect(first.fields.requestId).toMatch(uuid);
+    expect(second.fields.requestId).toMatch(uuid);
+    expect(first.fields.requestId).not.toBe(second.fields.requestId);
   });
 
   it('経路には実際の ID を含めず、テンプレートを残します。IP・Cookie・Origin も含めません', async () => {

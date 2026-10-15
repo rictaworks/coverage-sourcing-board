@@ -16,7 +16,7 @@ export class ApiResponder {
   }
 
   error(code: ResponseErrorCode, status: number): Response {
-    const body: ApiErrorBody = { code: code as ApiErrorCode, message: this.messageOf(code) };
+    const body: ApiErrorBody<ResponseErrorCode> = { code, message: this.messageOf(code) };
     return this.json(body, status);
   }
 

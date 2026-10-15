@@ -66,7 +66,7 @@
 | 確認事項 | 結果 |
 |---|---|
 | `wrangler dev` で模擬されるか | 模擬されます。Cloudflare の bindings の対応表（`developers.cloudflare.com/workers/development-testing/bindings-per-env`）に、Rate Limiting がローカルで模擬されると記載されています。実際にも、同じ IP の 6 回目の POST が 429 になることを確かめました。 |
-| 無料プランで使えるか | 未確認です。公式の Rate Limiting の文書では、プランによる制限の記載を確認できませんでした。第三者の記事では無料プランでも使えるとされていますが、公式の料金ページでは確かめていません。人が公式の料金ページで確かめてください。 |
+| 無料プランで使えるか | 公式の文書（`developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/`）には、期間が 10 秒か 60 秒であること、上限の設定が書かれていますが、無料プランでの可否の明記は見つかりませんでした（参照日 2026-10-16）。確認は人がダッシュボードで行います。 |
 | `period` の値 | 10 秒または 60 秒です（公式の文書の記載）。 |
 
 ## 7. 未実装・未対応

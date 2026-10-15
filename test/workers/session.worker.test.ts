@@ -82,4 +82,16 @@ describe('セッション Cookie（requirements 2.3・SPEC/worker-base.md）', (
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ hasSession: true, hasCampaign: false });
   });
+
+  it('登録のない経路・メソッド違い・未実装の経路では、セッションの行を作りません', async () => {
+    const count = async () => (await env.DB.prepare('SELECT COUNT(*) AS n FROM session').first<{ n: number }>())?.n ?? -1;
+    const before = await count();
+    const notFound = await SELF.fetch(`${TEST_BASE_URL}/api/no-such-path`);
+    const notAllowed = await SELF.fetch(`${TEST_BASE_URL}/api/health`, { method: 'DELETE', headers: { origin: TEST_BASE_URL, 'cf-connecting-ip': '203.0.113.200' } });
+    const notImplemented = await SELF.fetch(`${TEST_BASE_URL}/api/campaign`);
+    expect([notFound.status, notAllowed.status, notImplemented.status]).toEqual([404, 405, 501]);
+    expect(notFound.headers.get('set-cookie')).toBeNull();
+    expect(notImplemented.headers.get('set-cookie')).toBeNull();
+    expect(await count()).toBe(before);
+  });
 });

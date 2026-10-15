@@ -23,7 +23,16 @@ export type RouteMatch =
 
 /** 未実装の経路のハンドラー（501 と not_implemented を返す）。 */
 export function notImplementedRoute(responder: ApiResponder): RouteHandler {
-  return async () => responder.error('not_implemented', 501);
+  const handler: RouteHandler = async () => responder.error('not_implemented', 501);
+  NOT_IMPLEMENTED_HANDLERS.add(handler);
+  return handler;
+}
+
+const NOT_IMPLEMENTED_HANDLERS = new WeakSet<RouteHandler>();
+
+/** 未実装のハンドラーか。未実装の経路では、セッションを発行しない。 */
+export function isNotImplementedRoute(handler: RouteHandler): boolean {
+  return NOT_IMPLEMENTED_HANDLERS.has(handler);
 }
 
 /**

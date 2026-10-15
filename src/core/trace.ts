@@ -1,5 +1,5 @@
 import { COMMON_STRINGS } from '../config/strings/common';
-import { TRACE_FIELD_NAMES, TRACE_LABELS, TRACE_NAMES, type TraceLabel, type TraceFieldName, type TraceName } from '../config/trace';
+import { TRACE_FIELD_NAMES, TRACE_LABELS, TRACE_NAMES, TRACE_REQUEST_ID_PATTERN, type TraceLabel, type TraceFieldName, type TraceName } from '../config/trace';
 import type { AppEnv } from './types';
 
 /** トレースの詳しさ。summary は両環境で出し、detail は development だけで出す。 */
@@ -11,7 +11,9 @@ export type TraceLevel = 'summary' | 'detail';
 export type TraceValue = number | boolean | null | TraceLabel;
 
 /** フィールドは、許可リストにある名前だけを持てる。 */
-export type TraceFields = Readonly<Partial<Record<TraceFieldName, TraceValue>>>;
+export type TraceFields = Readonly<
+  Partial<Record<Exclude<TraceFieldName, 'requestId'>, TraceValue>> & { requestId?: string }
+>;
 
 /** 1 行の JSON として出力する。ts は JST（+09:00）。 */
 export interface TraceLine {
@@ -58,6 +60,12 @@ export class DebugTracer {
         throw new Error(COMMON_STRINGS.errorInvalidTraceField);
       }
       const value = fields[key];
+      if (key === 'requestId') {
+        if (typeof value !== 'string' || !TRACE_REQUEST_ID_PATTERN.test(value)) {
+          throw new Error(COMMON_STRINGS.errorInvalidTraceValue);
+        }
+        continue;
+      }
       if (typeof value === 'string' && !(TRACE_LABELS as readonly string[]).includes(value)) {
         throw new Error(COMMON_STRINGS.errorInvalidTraceValue);
       }

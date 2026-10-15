@@ -1,7 +1,7 @@
 import { resolveAppEnv } from '../config/env';
 import { WORKER_CONFIG } from '../config/worker';
 import { WORKER_STRINGS } from '../config/strings/worker';
-import { ApiRouter, type RouteHandler, type RouteHandlerTable } from './http/router';
+import { ApiRouter, isNotImplementedRoute, type RouteHandler, type RouteHandlerTable } from './http/router';
 import { ApiResponder } from './http/responses';
 import { OriginGuard } from './http/originGuard';
 import type { WorkerBindings } from './env';
@@ -22,10 +22,10 @@ import { TRACE_METHOD_LABELS, TRACE_ROUTE_UNMATCHED, type TraceLabel } from '../
  * 2. 状態を変える要求の Origin の確認（403）
  * 3. GET と HEAD 以外のレート制限（429）
  * 4. 経路の振り分け（404・405・ハンドラー）
- * 5. セッション Cookie の検証（無ければ発行）。health は対象外
+ * 5. セッション Cookie の検証（無ければ発行）。経路が見つかり、セッションを使う場合だけ。health と 404・405・501（未実装）は対象外
  * 不正なパス（不正な % の並び）は 400（invalid_request）にする。
  * 例外は握りつぶさず、500（internal_error）に変換する。
- * 要求ごとに、トレースを 1 件残す（メソッド・経路の型・状態コード・処理時間だけ）。
+ * 要求ごとに、トレースを 1 件残す（要求 ID・メソッド・経路の型・状態コード・処理時間だけ）。
  */
 export class WorkerApp {
   private readonly responder = new ApiResponder();
@@ -35,14 +35,15 @@ export class WorkerApp {
 
   async fetch(request: Request, env: WorkerBindings): Promise<Response> {
     const startedAt = Date.now();
+    const requestId = crypto.randomUUID();
     const routeRef: { label: TraceLabel } = { label: TRACE_ROUTE_UNMATCHED };
     const response = await this.handle(request, env, routeRef);
-    this.trace(request, env, routeRef.label, response.status, Date.now() - startedAt);
+    this.trace(request, env, requestId, routeRef.label, response.status, Date.now() - startedAt);
     return response;
   }
 
   /** 要求のトレースを 1 件残す。APP_ENV が不正なときは、500 の応答だけを返し、トレースは出さない。 */
-  private trace(request: Request, env: WorkerBindings, route: TraceLabel, status: number, durationMs: number): void {
+  private trace(request: Request, env: WorkerBindings, requestId: string, route: TraceLabel, status: number, durationMs: number): void {
     let appEnv: ReturnType<typeof resolveAppEnv>;
     try {
       appEnv = resolveAppEnv(env.APP_ENV);
@@ -51,7 +52,7 @@ export class WorkerApp {
     }
     const known = (TRACE_METHOD_LABELS as readonly string[]).includes(request.method);
     const method = (known ? request.method : 'OTHER') as TraceLabel;
-    new DebugTracer(appEnv, this.traceSink).summary('request.handled', { method, route, status, durationMs });
+    new DebugTracer(appEnv, this.traceSink).summary('request.handled', { requestId, method, route, status, durationMs });
   }
 
   private async handle(request: Request, env: WorkerBindings, routeRef: { label: TraceLabel }): Promise<Response> {
@@ -75,7 +76,8 @@ export class WorkerApp {
       }
       // health は死活確認のため、セッションを発行しない（DB を使わない）。それ以外の /api/* は Cookie を検証する。
       const isHealth = match.kind === 'found' && match.name === 'health';
-      const session = isHealth ? null : await new SessionService(env.DB).resolve(request.headers.get('cookie'));
+      const usesSession = match.kind === 'found' && !isHealth && !isNotImplementedRoute(router.handlerFor(match.name));
+      const session = !usesSession ? null : await new SessionService(env.DB).resolve(request.headers.get('cookie'));
       let response: Response;
       switch (match.kind) {
         case 'notFound':

@@ -29,10 +29,14 @@ export const TRACE_FIELD_NAMES = [
   'method',
   'route',
   'status',
+  'requestId',
 ] as const;
 
 export type TraceName = (typeof TRACE_NAMES)[number];
 export type TraceFieldName = (typeof TRACE_FIELD_NAMES)[number];
+
+/** 要求 ID（crypto.randomUUID() の形式）。ラベルの許可リストではなく、この形式で検査する。 */
+export const TRACE_REQUEST_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** 要求のトレースで、経路が登録のどれにも一致しなかったときの固定の名前。 */
 export const TRACE_ROUTE_UNMATCHED = 'unmatched';
