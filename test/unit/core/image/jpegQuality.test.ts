@@ -27,6 +27,13 @@ function buildJpegWithTable(natural: readonly number[], precision: 8 | 16): Uint
   ]);
 }
 
+describe('scaleQuantTable known libjpeg values', () => {
+  it('matches the libjpeg luminance table at quality 75 (first row, written independently)', () => {
+    const table = scaleQuantTable(IJG_LUMINANCE_TABLE, 75, 255);
+    expect(table.slice(0, 8)).toEqual([8, 6, 5, 8, 12, 20, 26, 31]);
+  });
+});
+
 describe('estimateJpegQuality', () => {
   it.each([50, 75, 90])('estimates the IJG quality %i within plus or minus 3', (quality) => {
     const table = scaleQuantTable(IJG_LUMINANCE_TABLE, quality, 255);

@@ -34,5 +34,6 @@ export function laplacianVariance(gray: GrayImage): number {
     }
   }
   const mean = sum / count;
-  return sumOfSquares / count - mean * mean;
+  // 丸め誤差で微小な負の値になり得るため、下限を 0 にします。
+  return Math.max(0, sumOfSquares / count - mean * mean);
 }

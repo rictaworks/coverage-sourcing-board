@@ -2,6 +2,7 @@
  * 画像の特徴量と一次判定の既定値（requirements.md 3.0）。
  * 実測の結果に応じて調整し、調整の内容は記録します。A2 の既定値の定義ができたら、そちらを参照する形に寄せます。
  * この Issue（B2）で使うのは dHashGrid だけです。ほかは B3 の判定で使います。
+ * B3 で既定値を一本化する（A2 の src/config/defaults.ts を参照）。
  */
 export const IMAGE_FEATURE_DEFAULTS = {
   /** 差分ハッシュの縮小の格子（横 9 × 縦 8 で、横方向の差分から 8 × 8 = 64 ビット） */

@@ -34,4 +34,13 @@ describe('laplacianVariance', () => {
     laplacianVariance(gray);
     expect(gray.data).toEqual(before);
   });
+
+  it('never returns a negative variance because of rounding errors', () => {
+    const width = 40;
+    const height = 40;
+    const data = new Uint8Array(width * height).fill(137);
+    data[5 * width + 5] = 138;
+    const value = laplacianVariance({ width, height, data });
+    expect(value).toBeGreaterThanOrEqual(0);
+  });
 });
