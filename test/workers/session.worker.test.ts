@@ -88,7 +88,8 @@ describe('セッション Cookie（requirements 2.3・SPEC/worker-base.md）', (
     const before = await count();
     const notFound = await SELF.fetch(`${TEST_BASE_URL}/api/no-such-path`);
     const notAllowed = await SELF.fetch(`${TEST_BASE_URL}/api/health`, { method: 'DELETE', headers: { origin: TEST_BASE_URL, 'cf-connecting-ip': '203.0.113.200' } });
-    const notImplemented = await SELF.fetch(`${TEST_BASE_URL}/api/campaign`);
+    // 未実装の経路は、C3 が実装するまで投稿の一覧を使う（キャンペーンは C2 で実装済み）。
+    const notImplemented = await SELF.fetch(`${TEST_BASE_URL}/api/submissions/mine`);
     expect([notFound.status, notAllowed.status, notImplemented.status]).toEqual([404, 405, 501]);
     expect(notFound.headers.get('set-cookie')).toBeNull();
     expect(notImplemented.headers.get('set-cookie')).toBeNull();

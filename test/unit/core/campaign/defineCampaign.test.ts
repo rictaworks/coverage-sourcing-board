@@ -79,6 +79,12 @@ describe('defineCampaign（キャンペーンの定義）', () => {
     );
   });
 
+  it('名称に制御文字・ゼロ幅の文字・双方向の制御文字があれば拒否します（NAME_INVALID）', () => {
+    for (const name of ['A\u0007B', 'A\u200BB', 'A\u202EB']) {
+      expect(errorCodeOf(() => defineCampaign(baseInput({ name }), fixedId))).toBe('NAME_INVALID');
+    }
+  });
+
   it('季節が 1 つもなければ拒否します（SEASON_NONE）', () => {
     expect(errorCodeOf(() => defineCampaign(baseInput({ seasons: [] }), fixedId))).toBe('SEASON_NONE');
   });
