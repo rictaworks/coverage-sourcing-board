@@ -1,0 +1,49 @@
+# Workers（API・Cron）の設定。秘密値は書きません（API トークンは環境変数で渡します）。
+# 本番の D1 の database_id は未作成のため仮の値です。デプロイ前に人が本番の値に置き換えます（SPEC/setup.md）。
+# 開発側の name を本番と分け、--env production なしのデプロイで本番の Worker を上書きしないようにします。
+name = "coverage-sourcing-board-dev"
+main = "src/worker/index.ts"
+compatibility_date = "2026-08-20"
+
+# 開発環境（wrangler dev と vitest の workers プロジェクト）
+[vars]
+APP_ENV = "development"
+
+[triggers]
+crons = ["0 18 * * *"]  # UTC 18:00 = 日本時間 03:00 の全削除
+
+[[d1_databases]]
+binding = "DB"
+database_name = "coverage-sourcing-board"
+database_id = "00000000-0000-0000-0000-000000000000"  # 開発用の仮の値
+migrations_dir = "migrations"
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "8100001"  # このリポジトリ専用の整数
+simple = { limit = 5, period = 10 }
+
+# 本番環境。D1・Rate Limiting・Cron は環境ごとに宣言が必要なため、同じ内容を書きます。
+# Workers AI（AI）は本番だけに宣言します。開発環境では作らず、分類は「被写体の推定はありません」になります。
+[env.production]
+name = "coverage-sourcing-board"
+
+[env.production.vars]
+APP_ENV = "production"
+
+[env.production.triggers]
+crons = ["0 18 * * *"]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "coverage-sourcing-board"
+database_id = "00000000-0000-0000-0000-000000000000"  # 仮の値。本番の D1 を作成後に人が置き換える
+migrations_dir = "migrations"
+
+[[env.production.ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "8100001"
+simple = { limit = 5, period = 10 }
+
+[env.production.ai]
+binding = "AI"

@@ -18,7 +18,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Node.js の準備
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: テストの実行
+        timeout-minutes: 10
         run: |
           set -euo pipefail
           if [ ! -f package.json ]; then
@@ -31,4 +37,4 @@ jobs:
           fi
           node -e 'const p = require("./package.json"); if (!p.scripts || !p.scripts.test) { console.error("package.json に scripts.test がありません。"); process.exit(1); }'
           npm ci
-          npm test
+          timeout 480 npm test
