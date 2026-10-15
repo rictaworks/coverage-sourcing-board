@@ -11,6 +11,7 @@ export const SEASON_LABELS = {
 
 export const CAMPAIGN_ERROR_MESSAGES = {
   NAME_EMPTY: 'キャンペーンの名称を入力してください。',
+  NAME_INVALID: 'キャンペーンの名称に使えない文字（制御文字・ゼロ幅の文字・双方向の制御文字）が含まれています。',
   AREA_NONE: '区分値を 1 つ以上指定してください。',
   AREA_INVALID: '区分値が空か、複合地域の区切りの位置が正しくありません。',
   AREA_TOO_LONG: '区分値が長すぎます。短くしてください。',
@@ -37,5 +38,8 @@ export const CAMPAIGN_ERROR_MESSAGES = {
  * 制御文字（U+0000-U+001F、U+007F-U+009F）、ゼロ幅の文字、双方向の制御文字。
  */
 export const AREA_FORBIDDEN_CHARS = /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]/;
+
+/** 名称に含めてはならない文字。区分値と同じ規則を使う。 */
+export const NAME_FORBIDDEN_CHARS = AREA_FORBIDDEN_CHARS;
 
 export type CampaignErrorCode = keyof typeof CAMPAIGN_ERROR_MESSAGES;

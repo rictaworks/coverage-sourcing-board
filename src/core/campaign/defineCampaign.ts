@@ -1,3 +1,4 @@
+import { NAME_FORBIDDEN_CHARS } from '../../config/strings/campaign';
 import { normalizeText } from '../text/normalize';
 import type { AcceptRule } from '../types';
 import { Area } from './area';
@@ -36,6 +37,9 @@ export class CampaignDefiner {
     const name = normalizeText(input.name);
     if (name === '') {
       throw new CampaignError('NAME_EMPTY');
+    }
+    if (NAME_FORBIDDEN_CHARS.test(name)) {
+      throw new CampaignError('NAME_INVALID');
     }
     CampaignDefiner.assertRule(input.rule);
     const id = this.newId();
