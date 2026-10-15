@@ -1,0 +1,58 @@
+/* テーマ「藍」（ライト固定）。色は :root のトークンだけで定義し、各画面はトークンを使う。 */
+:root {
+  color-scheme: light;
+  --color-accent: #1f3a68;
+  --color-accent-contrast: #ffffff;
+  --color-bg: #faf7f0;
+  --color-surface: #ffffff;
+  --color-text: #1c2331;
+  --color-text-muted: #515a6b;
+  --color-border: #d6cfbf;
+  --color-amber-bg: #fbeec2;
+  --color-amber-text: #5a3b00;
+  --color-amber-border: #e0b84f;
+  --color-pass: #25613a;
+  --color-review: #7a4f00;
+  --color-fail: #9b2c2c;
+  --font-sans: 'Hiragino Sans', 'Yu Gothic', 'Noto Sans JP', system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.7;
+  overflow-wrap: break-word;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-amber-border);
+  outline-offset: 2px;
+}
+
+main {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 6rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-accent);
+}

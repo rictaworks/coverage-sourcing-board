@@ -77,7 +77,8 @@ Thumbs.db
 *Zone.Identifier
 
 # --- テスト・カバレッジ ---
-coverage/
+# リポジトリ直下だけ。src/frontend/app/coverage/（充足マップのページ）を無視しないため
+/coverage/
 .rspec_status
 
 # --- Cloudflare Workers（ローカルの状態） ---

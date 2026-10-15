@@ -63,7 +63,12 @@ class JapaneseLiteralScanner {
   }
 
   scanProject(repoRoot: string): Violation[] {
-    const excludedDirs = [join(repoRoot, 'src', 'config'), join(repoRoot, 'test', 'fixtures')];
+    const excludedDirs = [
+      join(repoRoot, 'src', 'config'),
+      join(repoRoot, 'test', 'fixtures'),
+      join(repoRoot, 'src', 'frontend', '.next'),
+      join(repoRoot, 'src', 'frontend', 'out'),
+    ];
     return SCAN_ROOTS.flatMap((root) => this.listTargets(repoRoot, join(repoRoot, root), excludedDirs))
       .map((path) => relative(repoRoot, path).split(sep).join('/'))
       .filter((relativePath) => relativePath !== SELF_FILE)
@@ -171,6 +176,16 @@ describe('JapaneseLiteralScanner（検査器そのもの）', () => {
     writeFileSync(join(root, 'test', 'fixtures', 'data.ts'), "export const input = '入力';");
     writeFileSync(join(root, 'src', 'core', 'test', 'fixtures', 'deep.ts'), "export const input = '入力';");
     expect(scanner.scanProject(root).map((v) => v.file).sort()).toEqual(['src/core/test/fixtures/deep.ts', 'test/unit/a.test.ts']);
+  });
+
+  it('src/frontend/.next と src/frontend/out（ビルド成果物）は除外し、ほかの階層の同名フォルダは検査します', () => {
+    const root = mkdtempSync(join(tmpdir(), 'hardcode-'));
+    mkdirSync(join(root, 'test'), { recursive: true });
+    for (const dir of ['src/frontend/.next', 'src/frontend/out', 'src/core/out', 'src/frontend/app/out']) {
+      mkdirSync(join(root, dir), { recursive: true });
+      writeFileSync(join(root, dir, 'built.js'), "export const a = '表示';");
+    }
+    expect(scanner.scanProject(root).map((v) => v.file).sort()).toEqual(['src/core/out/built.js', 'src/frontend/app/out/built.js']);
   });
 
   it('既存の日本語の表示文（画面の文言）を見逃しません', () => {
