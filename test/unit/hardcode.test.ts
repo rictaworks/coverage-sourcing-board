@@ -10,10 +10,11 @@ const TARGET_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.mts',
 const SCAN_ROOTS = ['src', 'test'];
 /** 検査器そのもの（日本語の検査用データを持つ）だけは、検査の対象から外す。 */
 const SELF_FILE = 'test/unit/hardcode.test.ts';
-/** 入力データそのものが日本語である単体テスト（全角・半角の正規化の入力と期待値）。表示文ではないため、ここだけ明示して外す。 */
-const INPUT_FIXTURE_FILES = new Set(['test/unit/core/normalize.test.ts']);
+/** 行の末尾にこのマーカーがある行だけを、入力データとして検査から外す（ファイルごとは外さない）。 */
+const ALLOW_MARKER = '// hardcode-allow: 入力データ';
 const TEST_TITLE_CALLEES = new Set(['describe', 'it', 'test']);
-const SKIPPED_DIRECTORIES = new Set(['node_modules', '.next', 'out']);
+/** リポジトリ直下のこれらのフォルダだけを読み飛ばす。深い階層の同名フォルダは検査する。 */
+const SKIPPED_ROOT_DIRECTORIES = new Set(['node_modules', '.next', 'out']);
 
 interface Violation {
   readonly file: string;
@@ -26,12 +27,15 @@ class JapaneseLiteralScanner {
   scanSource(fileName: string, source: string): Violation[] {
     const kind = this.scriptKind(fileName);
     const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.ES2022, true, kind);
+    const sourceLines = source.split('\n');
     const violations: Violation[] = [];
     const visit = (node: ts.Node): void => {
       const text = this.literalText(node);
       if (text !== null && JAPANESE_PATTERN.test(text) && !this.isTestTitle(node)) {
         const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-        violations.push({ file: fileName, line: line + 1, text: text.trim() });
+        if (!this.isAllowedLine(sourceLines[line])) {
+          violations.push({ file: fileName, line: line + 1, text: text.trim() });
+        }
       }
       ts.forEachChild(node, visit);
     };
@@ -39,15 +43,17 @@ class JapaneseLiteralScanner {
     return violations;
   }
 
-  /** excludedDir（絶対パス）と完全に一致するフォルダだけを除く。同名の別の階層は除かない。 */
-  listTargets(rootDir: string, excludedDir: string): string[] {
+  /** excludedDir（絶対パス）と、repoRoot 直下の out・.next・node_modules だけを除く。同名の別の階層は除かない。 */
+  listTargets(repoRoot: string, rootDir: string, excludedDir: string): string[] {
     const targets: string[] = [];
     const excluded = resolve(excludedDir);
+    const repo = resolve(repoRoot);
     const walk = (dir: string): void => {
       for (const entry of readdirSync(dir)) {
         const path = join(dir, entry);
         if (statSync(path).isDirectory()) {
-          if (!SKIPPED_DIRECTORIES.has(entry) && resolve(path) !== excluded) {
+          const isSkippedRootDir = resolve(dir) === repo && SKIPPED_ROOT_DIRECTORIES.has(entry);
+          if (!isSkippedRootDir && resolve(path) !== excluded) {
             walk(path);
           }
           continue;
@@ -63,10 +69,15 @@ class JapaneseLiteralScanner {
 
   scanProject(repoRoot: string): Violation[] {
     const excludedDir = join(repoRoot, 'src', 'config');
-    return SCAN_ROOTS.flatMap((root) => this.listTargets(join(repoRoot, root), excludedDir))
+    return SCAN_ROOTS.flatMap((root) => this.listTargets(repoRoot, join(repoRoot, root), excludedDir))
       .map((path) => relative(repoRoot, path).split(sep).join('/'))
-      .filter((relativePath) => relativePath !== SELF_FILE && !INPUT_FIXTURE_FILES.has(relativePath))
+      .filter((relativePath) => relativePath !== SELF_FILE)
       .flatMap((relativePath) => this.scanSource(relativePath, readFileSync(join(repoRoot, relativePath), 'utf8')));
+  }
+
+  /** 行の末尾が許可マーカーである行だけを、入力データの行として扱う。 */
+  private isAllowedLine(lineText: string | undefined): boolean {
+    return lineText !== undefined && lineText.trimEnd().endsWith(ALLOW_MARKER);
   }
 
   private scriptKind(fileName: string): ts.ScriptKind {
@@ -133,8 +144,39 @@ describe('JapaneseLiteralScanner（検査器そのもの）', () => {
     writeFileSync(join(root, 'src', 'config', 'a.ts'), "export const a = '表示';");
     writeFileSync(join(root, 'src', 'core', 'config', 'b.ts'), "export const b = '表示';");
     writeFileSync(join(root, 'src', 'frontend', 'config', 'c.ts'), "export const c = '表示';");
-    const targets = scanner.listTargets(join(root, 'src'), join(root, 'src', 'config')).map((p) => relative(root, p).split(sep).join('/'));
+    const targets = scanner.listTargets(root, join(root, 'src'), join(root, 'src', 'config')).map((p) => relative(root, p).split(sep).join('/'));
     expect(targets.sort()).toEqual(['src/core/config/b.ts', 'src/frontend/config/c.ts']);
+  });
+
+  it('読み飛ばすのはリポジトリ直下の out・.next・node_modules だけです。深い階層の同名フォルダは検査します', () => {
+    const root = mkdtempSync(join(tmpdir(), 'hardcode-'));
+    for (const dir of ['out', '.next', 'node_modules']) {
+      mkdirSync(join(root, dir), { recursive: true });
+      writeFileSync(join(root, dir, 'top.ts'), "export const a = '表示';");
+      mkdirSync(join(root, 'src', 'core', dir), { recursive: true });
+      writeFileSync(join(root, 'src', 'core', dir, 'deep.ts'), "export const a = '表示';");
+    }
+    const rel = (paths: string[]) => paths.map((p) => relative(root, p).split(sep).join('/')).sort();
+    expect(rel(scanner.listTargets(root, root, join(root, 'src', 'config')))).toEqual([
+      'src/core/.next/deep.ts',
+      'src/core/node_modules/deep.ts',
+      'src/core/out/deep.ts',
+    ]);
+  });
+
+  it('許可マーカーの行だけを除外し、同じファイルの別の行は検出します', () => {
+    const source = [
+      "expect(f('ＡＢＣ')).toBe('ABC'); // hardcode-allow: 入力データ",
+      "const label = '表示';",
+      "const other = '入力'; // 別のコメント",
+    ].join('\n');
+    const violations = scanner.scanSource('test/unit/x.test.ts', source);
+    expect(violations.map((v) => v.line)).toEqual([2, 3]);
+  });
+
+  it('既存の日本語の表示文（画面の文言）を見逃しません', () => {
+    const source = "export const Page = () => <h1>{'素材調達ボード'}</h1>;\nexport const msg = 'エラーが発生しました';";
+    expect(scanner.scanSource('src/frontend/app/page.tsx', source)).toHaveLength(2);
   });
 
   it('.js・.jsx・.mjs・.cjs・.mts・.cts・.ts・.tsx のすべてを対象にし、日本語を検出します', () => {
@@ -144,7 +186,7 @@ describe('JapaneseLiteralScanner（検査器そのもの）', () => {
     for (const name of names) {
       writeFileSync(join(root, 'src', name), name.endsWith('x') ? 'export const C = () => <p>表示</p>;' : "export const a = '表示';");
     }
-    const targets = scanner.listTargets(join(root, 'src'), join(root, 'src', 'config'));
+    const targets = scanner.listTargets(root, join(root, 'src'), join(root, 'src', 'config'));
     expect(targets.map((p) => relative(join(root, 'src'), p)).sort()).toEqual([...names].sort());
     const found = targets.flatMap((p) => scanner.scanSource(p, readFileSync(p, 'utf8')));
     expect(found).toHaveLength(names.length);
@@ -157,7 +199,7 @@ describe('JapaneseLiteralScanner（検査器そのもの）', () => {
   });
 
   it('検査対象は src/ 以下の .ts・.tsx・.mjs などで、src/config/ を除き、既知のファイルを必ず含みます（TH2）', () => {
-    const targets = scanner.listTargets(join(REPO_ROOT, 'src'), join(REPO_ROOT, 'src', 'config')).map((path) => relative(REPO_ROOT, path).split(sep).join('/'));
+    const targets = scanner.listTargets(REPO_ROOT, join(REPO_ROOT, 'src'), join(REPO_ROOT, 'src', 'config')).map((path) => relative(REPO_ROOT, path).split(sep).join('/'));
     expect(targets).toContain('src/worker/index.ts');
     expect(targets).toContain('src/frontend/app/page.tsx');
     expect(targets).toContain('src/frontend/next.config.mjs');
