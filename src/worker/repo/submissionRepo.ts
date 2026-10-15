@@ -173,7 +173,11 @@ export class SubmissionRepo {
 
   /** 保存済みの投稿に、判定結果を 1 行足す（被写体の推定は、挿入の後に呼ぶため、ここで足す）。 */
   async addCheck(sessionHash: string, submissionId: string, check: StoredCheck): Promise<void> {
-    await this.checkStatement(submissionId, sessionHash, check, false).run();
+    // 03:00 の全削除と重なると、投稿の行が無く外部キーで失敗する。存在を保証したうえで挿入し、無ければ明示的な内部エラーにする。
+    const result = await this.checkStatement(submissionId, sessionHash, check, true).run();
+    if ((result.meta.changes ?? 0) === 0) {
+      throw new Error(SUBMISSION_DEV_MESSAGES.errorSubmissionMissing);
+    }
   }
 
   private checkStatement(submissionId: string, sessionHash: string, check: StoredCheck, onlyIfSubmissionExists: boolean): D1PreparedStatement {

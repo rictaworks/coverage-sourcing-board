@@ -14,7 +14,7 @@ import { TemplateSeedBuilder, type TemplateDefinition } from '../../src/worker/d
 import { sha256Hex } from '../../src/worker/security/sha256';
 import { DEVELOPMENT_WEB_ORIGIN, TEST_BASE_URL, WORKER_TEST_TIMEOUT_MS, testIp } from '../fixtures/workerRequests';
 import { applyMigrations } from '../helpers/d1Migrations';
-import { app1Exif, buildJpeg, largeScan } from '../helpers/jpegBytes';
+import { app1Exif, app2Icc, buildJpeg, largeScan } from '../helpers/jpegBytes';
 
 interface Session {
   readonly cookie: string;
@@ -222,6 +222,17 @@ describe('投稿の受け取り（POST /api/submissions）：受け入れ条件�
     const session = await newSession();
     const campaign = await loadCampaign(session);
     const image = buildJpeg({ width: 1600, height: 1200, extraSegments: [app1Exif()] });
+    const response = await postSubmission(session, { image, meta: metaFor(firstCell(campaign).cellId) });
+    expect(response.status).toBe(400);
+    expect((await errorOf(response)).code).toBe('metadata_not_allowed');
+    expect(await countRows('submission', session.hash)).toBe(0);
+    expect(await countRows('check_result', session.hash)).toBe(0);
+  });
+
+  it('APP2（ICC）を含む JPEG は 400（metadata_not_allowed）で、行を増やしません（許可リスト方式）', async () => {
+    const session = await newSession();
+    const campaign = await loadCampaign(session);
+    const image = buildJpeg({ width: 1600, height: 1200, extraSegments: [app2Icc()] });
     const response = await postSubmission(session, { image, meta: metaFor(firstCell(campaign).cellId) });
     expect(response.status).toBe(400);
     expect((await errorOf(response)).code).toBe('metadata_not_allowed');
