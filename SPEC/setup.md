@@ -50,6 +50,9 @@ npm の公開日は `npm view <パッケージ> time --json` で確かめまし�
 - `@cloudflare/vitest-pool-workers` は `@cloudflare/vitest-plugin` へ改名されたため、公開から 2 週間以上経った 1.3.5 に移行しました。`cloudflareTest` の使い方は同じです。
 - wrangler.toml の `compatibility_date` は `2026-08-20` です。`@cloudflare/vitest-plugin` が内部で使う workerd が対応する最新の日付（2026-08-22）より前にしています。
 - `npm audit --omit=dev` の結果は 0 件（high 以上なし）です（2026-10-16 確認）。
+- 開発用の依存を含めた `npm audit` では、high が 4 件、critical が 2 件あります（concurrently などの経由。2026-10-16 確認）。
+- 本番（Worker と静的出力）には開発用の依存が入らないため、本番への影響は小さいと判断しています。ただし、断定はしていません。
+- 残る作業：該当する依存の版の更新は、後続の Issue で検討します。
 
 ## 3. 開発の起動方法
 
