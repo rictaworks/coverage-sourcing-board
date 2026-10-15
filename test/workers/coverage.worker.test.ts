@@ -3,10 +3,11 @@
 import { SELF, env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import templateRaw from '../../data/templates/shikoku-landscape.json?raw';
+import { API_ERROR_MESSAGES } from '../../src/config/strings/apiErrors';
 import { CAMPAIGN_API_ERROR_MESSAGES } from '../../src/config/strings/campaignApi';
 import { TemplateSeedBuilder, type TemplateDefinition } from '../../src/worker/db/templateSeed';
 import { sha256Hex } from '../../src/worker/security/sha256';
-import { DEVELOPMENT_WEB_ORIGIN, TEST_BASE_URL } from '../fixtures/workerRequests';
+import { DEVELOPMENT_WEB_ORIGIN, TEST_BASE_URL, WORKER_TEST_TIMEOUT_MS } from '../fixtures/workerRequests';
 import { applyMigrations } from '../helpers/d1Migrations';
 
 interface Session {
@@ -87,7 +88,7 @@ async function loadTemplate(session: Session): Promise<CoverageBody> {
   return loadCoverage(session);
 }
 
-describe('充足マップ（GET /api/coverage）の基本', () => {
+describe('充足マップ（GET /api/coverage）の基本', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -118,7 +119,7 @@ describe('充足マップ（GET /api/coverage）の基本', () => {
   });
 });
 
-describe('充足の計算（採用・確認待ち・募集終了）', () => {
+describe('充足の計算（採用・確認待ち・募集終了）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -180,7 +181,7 @@ describe('充足の計算（採用・確認待ち・募集終了）', () => {
   });
 });
 
-describe('セッションの隔離（requirements 2.3）', () => {
+describe('セッションの隔離（requirements 2.3）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -207,5 +208,26 @@ describe('セッションの隔離（requirements 2.3）', () => {
     await loadTemplate(a);
     const response = await call('GET', '/api/coverage', b);
     expect(response.status).toBe(404);
+  });
+});
+
+describe('整合性の崩れ（マスがキャンペーンに無い投稿の行）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await seedTemplate();
+  });
+
+  it('自分のセッションの投稿が他のキャンペーンのマスを指していても、例外にせず 500（internal_error）を返します', async () => {
+    const a = await newSession();
+    const b = await newSession();
+    await loadTemplate(a);
+    const coverageB = await loadTemplate(b);
+    await insertSubmission(a, coverageB.cells[0].cellId, 'accepted');
+    const response = await call('GET', '/api/coverage', a);
+    expect(response.status).toBe(500);
+    const body = (await response.json()) as { code: string; message: string };
+    expect(body.code).toBe('internal_error');
+    expect(body.message).toBe(API_ERROR_MESSAGES.internal_error);
+    expect(JSON.stringify(body)).not.toContain(coverageB.cells[0].cellId);
   });
 });

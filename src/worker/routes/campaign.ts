@@ -51,7 +51,7 @@ class InvalidBodyError extends Error {}
 
 /** 値の範囲が上限を超えること（400 invalid_request。応答の文言は、メッセージのキーで決める）。 */
 class LimitExceededError extends Error {
-  constructor(readonly key: 'area_limit_exceeded' | 'rule_limit_exceeded' | 'required_out_of_range') {
+  constructor(readonly key: 'area_limit_exceeded' | 'rule_limit_exceeded' | 'required_out_of_range' | 'name_too_long') {
     super(key);
   }
 }
@@ -62,6 +62,9 @@ function assertRequiredInRange(value: number): void {
     throw new LimitExceededError('required_out_of_range');
   }
 }
+
+/** 保存されたデータの整合性が崩れていること（500 internal_error。詳細は応答に含めず、ログに残す）。 */
+class CampaignConsistencyError extends Error {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -236,7 +239,7 @@ class CampaignMapper {
   domainIdOfDb(cellId: string): string {
     const domainId = this.domainIdByDbCell.get(cellId);
     if (domainId === undefined) {
-      throw new Error(CAMPAIGN_API_DEV_MESSAGES.errorCellMissing);
+      throw new CampaignConsistencyError(CAMPAIGN_API_DEV_MESSAGES.errorCellMissing);
     }
     return domainId;
   }
@@ -318,7 +321,7 @@ class CampaignRoutes {
         acceptRule: requireAcceptRule(body.acceptRule),
       };
       if ([...normalizeText(update.name)].length > CAMPAIGN_API_CONFIG.nameMaxChars) {
-        throw new InvalidBodyError();
+        throw new LimitExceededError('name_too_long');
       }
       if (update.acceptRule.maxInputBytes > RULE_DEFAULTS.maxInputBytes || update.acceptRule.maxPixels > RULE_DEFAULTS.maxInputPixels) {
         throw new LimitExceededError('rule_limit_exceeded');
@@ -461,6 +464,10 @@ class CampaignRoutes {
   private failure(error: unknown): Response {
     if (error instanceof InvalidBodyError) {
       return this.error('invalid_request', 400, API_ERROR_MESSAGES.invalid_request);
+    }
+    if (error instanceof CampaignConsistencyError) {
+      console.error(error.message);
+      return this.error('internal_error', 500, API_ERROR_MESSAGES.internal_error);
     }
     if (error instanceof LimitExceededError) {
       return this.error('invalid_request', 400, CAMPAIGN_API_ERROR_MESSAGES[error.key]);

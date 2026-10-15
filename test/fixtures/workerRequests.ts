@@ -23,3 +23,6 @@ export function testIp(seed: number): string {
 
 /** 形式の正しくない Cookie の値（43 文字の base64url ではない）。 */
 export const MALFORMED_COOKIE_VALUE = 'short-value';
+
+/** D1 の移行と複数の要求を行う Workers のテストの、1 件あたりの時間切れ（ミリ秒）。並列実行で遅くなる件に、describe 単位で使う。 */
+export const WORKER_TEST_TIMEOUT_MS = 30_000;

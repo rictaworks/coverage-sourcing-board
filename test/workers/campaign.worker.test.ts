@@ -8,10 +8,9 @@ import { RULE_DEFAULTS } from '../../src/config/defaults';
 import { LIMITS } from '../../src/config/limits';
 import { CAMPAIGN_ERROR_MESSAGES } from '../../src/config/strings/campaign';
 import { CAMPAIGN_API_ERROR_MESSAGES } from '../../src/config/strings/campaignApi';
-import { API_ERROR_MESSAGES } from '../../src/config/strings/apiErrors';
 import { TemplateSeedBuilder, type TemplateDefinition } from '../../src/worker/db/templateSeed';
 import { sha256Hex } from '../../src/worker/security/sha256';
-import { DEVELOPMENT_WEB_ORIGIN, TEST_BASE_URL } from '../fixtures/workerRequests';
+import { DEVELOPMENT_WEB_ORIGIN, FOREIGN_ORIGIN, TEST_BASE_URL, WORKER_TEST_TIMEOUT_MS, testIp } from '../fixtures/workerRequests';
 import { applyMigrations } from '../helpers/d1Migrations';
 
 type TableName = 'campaign' | 'area' | 'period' | 'cell' | 'accept_rule';
@@ -90,7 +89,7 @@ async function loadTemplate(session: Session): Promise<CampaignBody> {
   return (await response.json()) as CampaignBody;
 }
 
-describe('テンプレートの読み込み（POST /api/campaign/template）', () => {
+describe('テンプレートの読み込み（POST /api/campaign/template）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -136,7 +135,7 @@ describe('テンプレートの読み込み（POST /api/campaign/template）', (
   });
 });
 
-describe('キャンペーンの取得（GET /api/campaign）', () => {
+describe('キャンペーンの取得（GET /api/campaign）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -170,7 +169,7 @@ describe('キャンペーンの取得（GET /api/campaign）', () => {
   });
 });
 
-describe('キャンペーンの編集（PUT /api/campaign）', () => {
+describe('キャンペーンの編集（PUT /api/campaign）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -239,7 +238,7 @@ describe('キャンペーンの編集（PUT /api/campaign）', () => {
       acceptRule: campaign.acceptRule,
     });
     expect(tooLong.status).toBe(400);
-    expect(((await tooLong.json()) as { message: string }).message).toBe(API_ERROR_MESSAGES.invalid_request);
+    expect(((await tooLong.json()) as { message: string }).message).toBe(CAMPAIGN_API_ERROR_MESSAGES.name_too_long);
   });
 
   it('受入条件を更新できます（最小短辺）', async () => {
@@ -348,7 +347,7 @@ describe('キャンペーンの編集（PUT /api/campaign）', () => {
   });
 });
 
-describe('区分値の追加（POST /api/campaign/areas）', () => {
+describe('区分値の追加（POST /api/campaign/areas）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -418,7 +417,7 @@ describe('区分値の追加（POST /api/campaign/areas）', () => {
   });
 });
 
-describe('セッションの隔離（requirements 2.3・CLAUDE.md 8）', () => {
+describe('セッションの隔離（requirements 2.3・CLAUDE.md 8）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
   beforeEach(async () => {
     await applyMigrations(env.DB);
     await seedTemplate();
@@ -456,3 +455,98 @@ describe('セッションの隔離（requirements 2.3・CLAUDE.md 8）', () => {
   });
 });
 
+describe('他のセッションのマスの ID を差し込む操作（IDOR）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await seedTemplate();
+  });
+
+  it('B の PUT に A の実際のマスの ID を差し込むと 400 になり、A と B の必要数は変わりません', async () => {
+    const a = await newSession();
+    const b = await newSession();
+    const campaignA = await loadTemplate(a);
+    const campaignB = await loadTemplate(b);
+    const values: Record<string, number> = {};
+    for (const cell of campaignB.cells) {
+      values[cell.cellId] = 2;
+    }
+    values[campaignA.cells[0].cellId] = 9;
+    const response = await call('PUT', '/api/campaign', b, {
+      name: campaignB.name,
+      requiredPerCell: { mode: 'individual', values },
+      acceptRule: campaignB.acceptRule,
+    });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { message: string }).message).toBe(CAMPAIGN_ERROR_MESSAGES.REQUIRED_UNKNOWN_CELL);
+    expect((await readCampaign(a)).cells.every((cell) => cell.required === 2)).toBe(true);
+    expect((await readCampaign(b)).cells.every((cell) => cell.required === 2)).toBe(true);
+  });
+});
+
+describe('Origin の確認とレート制限（C1 の仕組みが C2 の経路で効くこと）', { timeout: WORKER_TEST_TIMEOUT_MS }, () => {
+  beforeEach(async () => {
+    await applyMigrations(env.DB);
+    await seedTemplate();
+  });
+
+  async function send(method: string, path: string, session: Session, origin: string | null, ip: string, body: unknown): Promise<Response> {
+    const headers: Record<string, string> = { cookie: session.cookie, 'cf-connecting-ip': ip, 'content-type': 'application/json' };
+    if (origin !== null) {
+      headers.origin = origin;
+    }
+    return SELF.fetch(`${TEST_BASE_URL}${path}`, { method, headers, body: JSON.stringify(body) });
+  }
+
+  it('POST（テンプレート・区分値）と PUT は、Origin が無い、または他のサイトなら 403 です', async () => {
+    const session = await newSession();
+    const campaign = await loadTemplate(session);
+    const putBody = { name: campaign.name, requiredPerCell: { mode: 'uniform', value: 9 }, acceptRule: campaign.acceptRule };
+    const cases: [string, string, unknown][] = [
+      ['POST', '/api/campaign/template', { templateId: 'shikoku-landscape' }],
+      ['POST', '/api/campaign/areas', { areas: [{ prefecture: 'kochi', label: 'Test Area' }] }],
+      ['PUT', '/api/campaign', putBody],
+    ];
+    for (const [method, path, body] of cases) {
+      for (const origin of [null, FOREIGN_ORIGIN]) {
+        const response = await send(method, path, session, origin, uniqueIp(), body);
+        expect(response.status, `${method} ${path} origin=${origin}`).toBe(403);
+        expect(((await response.json()) as { code: string }).code).toBe('origin_forbidden');
+      }
+    }
+    const after = await readCampaign(session);
+    expect(after.areas).toHaveLength(21);
+    expect(after.cells.every((cell) => cell.required === 2)).toBe(true);
+  });
+
+  it('同じ IP から書き込みの要求を続けると、PUT は 429（rate_limited）になります', async () => {
+    const session = await newSession();
+    const campaign = await loadTemplate(session);
+    const ip = testIp(150);
+    const body = { name: campaign.name, requiredPerCell: { mode: 'uniform', value: 2 }, acceptRule: campaign.acceptRule };
+    const statuses: number[] = [];
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const response = await send('PUT', '/api/campaign', session, DEVELOPMENT_WEB_ORIGIN, ip, body);
+      statuses.push(response.status);
+      if (response.status === 429) {
+        expect(((await response.json()) as { code: string }).code).toBe('rate_limited');
+        break;
+      }
+    }
+    expect(statuses.at(-1), `statuses: ${statuses.join(',')}`).toBe(429);
+    expect(statuses.slice(0, -1).every((status) => status === 200)).toBe(true);
+  });
+
+  it('同じ IP から続けると、POST（テンプレート）も 429 になります', async () => {
+    const session = await newSession();
+    const ip = testIp(151);
+    const statuses: number[] = [];
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const response = await send('POST', '/api/campaign/template', session, DEVELOPMENT_WEB_ORIGIN, ip, { templateId: 'shikoku-landscape' });
+      statuses.push(response.status);
+      if (response.status === 429) {
+        break;
+      }
+    }
+    expect(statuses.at(-1), `statuses: ${statuses.join(',')}`).toBe(429);
+  });
+});
