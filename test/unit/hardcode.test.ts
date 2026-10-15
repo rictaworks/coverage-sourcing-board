@@ -13,6 +13,8 @@ const SELF_FILE = 'test/unit/hardcode.test.ts';
 const TEST_TITLE_CALLEES = new Set(['describe', 'it', 'test']);
 /** リポジトリ直下のこれらのフォルダだけを読み飛ばす。深い階層の同名フォルダは検査する。 */
 const SKIPPED_ROOT_DIRECTORIES = new Set(['node_modules', '.next', 'out']);
+/** Next.js アプリ（src/frontend）が出力する生成物。ソースから作られるため検査の対象から外す。 */
+const GENERATED_APP_DIRECTORIES = ['.next', 'out'];
 
 interface Violation {
   readonly file: string;
@@ -63,7 +65,12 @@ class JapaneseLiteralScanner {
   }
 
   scanProject(repoRoot: string): Violation[] {
-    const excludedDirs = [join(repoRoot, 'src', 'config'), join(repoRoot, 'test', 'fixtures')];
+    // src/frontend は Next.js のアプリの根のため、.next と out（生成物）は src/frontend 直下にできる。生成物は検査しない。
+    const excludedDirs = [
+      join(repoRoot, 'src', 'config'),
+      join(repoRoot, 'test', 'fixtures'),
+      ...GENERATED_APP_DIRECTORIES.map((dir) => join(repoRoot, 'src', 'frontend', dir)),
+    ];
     return SCAN_ROOTS.flatMap((root) => this.listTargets(repoRoot, join(repoRoot, root), excludedDirs))
       .map((path) => relative(repoRoot, path).split(sep).join('/'))
       .filter((relativePath) => relativePath !== SELF_FILE)
@@ -210,5 +217,18 @@ describe('ハードコード検査（実リポジトリ）', () => {
   it('src/config/ の外（src と test）に、日本語の文字列リテラルと JSX のテキストがないこと', () => {
     const violations = new JapaneseLiteralScanner().scanProject(REPO_ROOT);
     expect(violations.map((v) => `${v.file}:${v.line} ${v.text}`)).toEqual([]);
+  });
+
+  it('Next.js の生成物（src/frontend/.next・out）は検査せず、ソースの日本語は検出します', () => {
+    const root = mkdtempSync(join(tmpdir(), 'hardcode-'));
+    mkdirSync(join(root, 'src', 'frontend', '.next', 'dev'), { recursive: true });
+    mkdirSync(join(root, 'src', 'frontend', 'out'), { recursive: true });
+    mkdirSync(join(root, 'src', 'frontend', 'app'), { recursive: true });
+    mkdirSync(join(root, 'test'), { recursive: true });
+    writeFileSync(join(root, 'src', 'frontend', '.next', 'dev', 'chunk.js'), "export const a = '表示';");
+    writeFileSync(join(root, 'src', 'frontend', 'out', 'index.js'), "export const a = '表示';");
+    writeFileSync(join(root, 'src', 'frontend', 'app', 'page.tsx'), "export const a = '表示';");
+    const files = new JapaneseLiteralScanner().scanProject(root).map((v) => v.file);
+    expect(files).toEqual(['src/frontend/app/page.tsx']);
   });
 });
