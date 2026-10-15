@@ -22,6 +22,7 @@
 | 採用の取り消し（revoke） | `accepted` → `returned`（差し戻し扱い） | それ以外は 409 |
 
 - 採用の枠：採用数が必要数未満なら採用します。必要数に達していれば、確認の印（`confirmOverQuota: true`）が無い限り 409（`over_quota_confirmation_required`）です。印があれば超過採用（`over_quota = 1`）として採用します。
+- 読み取りと書き込みの間にマスが埋まった場合は、確認の印があっても 409（`invalid_state`）になります。
 - 書き込みは、review の行と submission の行を 1 回の D1 の batch で行います。条件（元の状態・枠）は、書き込みの SQL の中でも確かめます（同時の要求で枠を超えないように）。
 - 取り消しの後は、採用数が減るため、マスは再び募集中になります（`GET /api/coverage` で確かめます）。
 - 再投稿（`returned` から `checking`）は C3 の担当です。この API は、再投稿の可否（`resubmittable`）を返すまでです。
@@ -33,11 +34,11 @@
 | 経路 | 応答 | 内容 |
 |---|---|---|
 | `GET /api/review/queue` | 200 | 確認キュー（`items`）と、取り消しのための採用済みの一覧（`accepted`） |
-| `POST /api/review/:id/accept` | 200・400・404・409 | 要求 `{ "confirmOverQuota": true }`（省略は false。真偽値以外は 400） |
+| `POST /api/review/:id/accept` | 200・400・404・409 | 要求 `{ "confirmOverQuota": true }`（本文は必須の JSON オブジェクトで、空だと 400。「省略は false」は `confirmOverQuota` の省略だけを指す。真偽値以外は 400） |
 | `POST /api/review/:id/return` | 200・400・404・409 | 要求 `{ "reasonCode", "freeText", "resubmittable" }` |
 | `POST /api/review/:id/revoke` | 200・400・404・409 | 要求は差し戻しと同じ |
 | `GET /api/submissions/mine` | 200 | 自分の投稿の一覧（確認中の行は含めない） |
-| `GET /api/submissions/:id/image` | 200・404 | 画像（JPEG）。`Content-Type: image/jpeg`、`X-Content-Type-Options: nosniff`、`Content-Disposition: inline` |
+| `GET /api/submissions/:id/image` | 200・404 | 画像（JPEG）。`Content-Type: image/jpeg`、`X-Content-Type-Options: nosniff`、`Content-Disposition: inline`、`Cache-Control: private, no-store` |
 
 ### 確認キューの 1 件（`items[]`）
 
@@ -89,7 +90,7 @@
 5. 差し戻しの自由記述は、保存の列が無いため、review の `reason` 列に JSON で入れています。専用の列を作るなら、マイグレーションが必要です（この Issue の範囲外）。
 6. 取り消しの後も `over_quota` は残します（過去に超過採用されたことの記録）。
 7. `GET /api/submissions/mine` と `GET /api/submissions/:id/image` は、C3 の `submissions.ts` ではなく、`reviewHandlers`（`review.ts`）から登録して C1 の 501 を上書きしています。C3 が `submissions.ts` を実装するときに、これらを移してください。
-8. 画像の `Cache-Control` は、仕様の `private, no-store` ではなく `no-store` になります。基盤の `ApiResponder.finish`（`src/worker/http/responses.ts`）が全応答に `no-store` を上書きするためです。`private, no-store` にするには、基盤の変更が必要です（この Issue の範囲外）。
+8. 画像の `Cache-Control` は、実装でも `private, no-store` が保たれます（`ApiResponder.finish` が、設定済みの値を上書きしないように変更されています）。逸脱はありません。
 
 ## 7. 被写体の推定の行（C3 との約束）
 
