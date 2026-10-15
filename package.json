@@ -13,6 +13,7 @@
     "dev": "concurrently -k -n web,api -c blue,magenta \"npm:dev:web\" \"npm:dev:api\"",
     "build:web": "next build src/frontend",
     "db:migrate:local": "node scripts/db-migrate-local.mjs",
+    "db:seed:local": "node scripts/seed-template-local.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
