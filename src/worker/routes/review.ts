@@ -380,7 +380,7 @@ class ReviewRoutes {
 /**
  * 最終確認と投稿の参照の経路（C5）。
  * 投稿の一覧（submissionsMine）と画像（submissionImage）も、この関数で登録する（C1 の 501 を上書きする）。
- * 注意：submission の経路を C3 が実装したら、この 2 件は submissions.ts へ移す（二重の登録を残さない）。
+ * この 2 件の登録はここだけにする（submissions.ts では登録しない）。
  */
 export function reviewHandlers(responder: ApiResponder): Partial<Record<ApiEndpointName, RouteHandler>> {
   const routes = new ReviewRoutes(responder);

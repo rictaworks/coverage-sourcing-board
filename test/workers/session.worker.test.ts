@@ -2,7 +2,7 @@ import { SELF, env } from 'cloudflare:test';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { WORKER_CONFIG } from '../../src/config/worker';
 import { sha256Hex } from '../../src/worker/security/sha256';
-import { DEVELOPMENT_WEB_ORIGIN, MALFORMED_COOKIE_VALUE, TEST_BASE_URL } from '../fixtures/workerRequests';
+import { MALFORMED_COOKIE_VALUE, TEST_BASE_URL } from '../fixtures/workerRequests';
 import { applyMigrations } from '../helpers/d1Migrations';
 
 /** Set-Cookie から csid の値を取り出す。 */
@@ -83,20 +83,15 @@ describe('セッション Cookie（requirements 2.3・SPEC/worker-base.md）', (
     expect(await response.json()).toEqual({ hasSession: true, hasCampaign: false });
   });
 
-  it('登録のない経路・メソッド違い・未実装の経路では、セッションの行を作りません', async () => {
+  it('登録のない経路・メソッド違いでは、セッションの行を作りません', async () => {
     const count = async () => (await env.DB.prepare('SELECT COUNT(*) AS n FROM session').first<{ n: number }>())?.n ?? -1;
     const before = await count();
     const notFound = await SELF.fetch(`${TEST_BASE_URL}/api/no-such-path`);
     const notAllowed = await SELF.fetch(`${TEST_BASE_URL}/api/health`, { method: 'DELETE', headers: { origin: TEST_BASE_URL, 'cf-connecting-ip': '203.0.113.200' } });
-    // 未実装の経路は、C3 が実装するまで投稿の作成を使う（審査と投稿の一覧は C5 で実装済み）。
-    const notImplemented = await SELF.fetch(`${TEST_BASE_URL}/api/submissions`, {
-      method: 'POST',
-      headers: { origin: DEVELOPMENT_WEB_ORIGIN, 'cf-connecting-ip': '203.0.113.201' },
-      body: '{}',
-    });
-    expect([notFound.status, notAllowed.status, notImplemented.status]).toEqual([404, 405, 501]);
+    // 全経路が実装済みになったため、未実装（501）の経路は無い。404 とメソッド違い（405）で確かめる。
+    expect([notFound.status, notAllowed.status]).toEqual([404, 405]);
     expect(notFound.headers.get('set-cookie')).toBeNull();
-    expect(notImplemented.headers.get('set-cookie')).toBeNull();
+    expect(notAllowed.headers.get('set-cookie')).toBeNull();
     expect(await count()).toBe(before);
   });
 });

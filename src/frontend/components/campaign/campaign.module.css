@@ -1,0 +1,229 @@
+/* キャンペーン設定の部品。色は globals.css の :root のトークンだけを使います。 */
+.flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: var(--color-surface);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.125rem;
+  color: var(--color-accent);
+}
+
+.help {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.notice {
+  margin: 0;
+  border: 1px solid var(--color-pass);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-pass);
+  font-weight: 700;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-weight: 700;
+}
+
+.input,
+.select {
+  min-height: 2.75rem;
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.input[aria-invalid='true'] {
+  border: 2px solid var(--color-fail);
+}
+
+.inputWide {
+  width: min(20rem, 100%);
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--color-fail);
+  font-weight: 700;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/*
+ * 画面の全体。幅 0 で置き、内容の最小幅を親のグリッドに伝えないようにします（表の最小幅で、ページ全体が横に動くのを防ぎます）。
+ */
+.page {
+  width: 0;
+  min-width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+/* 表は、幅が足りないときだけ表の中で横に動きます（ページ全体は横に動きません）。 */
+.tableWrap {
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+}
+
+.table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  background-color: var(--color-bg);
+  color: var(--color-accent);
+}
+
+.rowHeader {
+  white-space: nowrap;
+}
+
+.prefecture {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.cellInput {
+  width: 6rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  font: inherit;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.cellInput[aria-invalid='true'] {
+  border: 2px solid var(--color-fail);
+}
+
+.cellError {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-fail);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.ruleList {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.ruleRow {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.75rem;
+}
+
+.ruleRow dt {
+  font-weight: 700;
+}
+
+.ruleRow dd {
+  margin: 0;
+}
+
+.ruleInputRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.button {
+  min-height: 2.75rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.buttonSecondary {
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+}
+
+.button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.list {
+  margin: 0;
+  padding-left: 1.25rem;
+}

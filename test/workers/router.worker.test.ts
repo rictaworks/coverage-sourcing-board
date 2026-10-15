@@ -59,6 +59,7 @@ describe('ルーター（SPEC/worker-base.md）', () => {
       'campaignTemplate',
       'campaignAreas',
       'coverage',
+      'submissionCreate',
       'submissionsMine',
       'submissionImage',
       'reviewQueue',

@@ -29,14 +29,14 @@ describe('Origin の確認（開発の設定：APP_ENV=development）', () => {
     await applyMigrations(env.DB);
   });
 
-  it('開発の Web（localhost:3000）からの POST は通ります（未実装の 501）', async () => {
+  it('開発の Web（localhost:3000）からの POST は通ります（形式の検査で 400）', async () => {
     const response = await postWithOrigin(DEVELOPMENT_WEB_ORIGIN, 1);
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(400);
   });
 
   it('開発の API（localhost:8787）からの POST も通ります', async () => {
     const response = await postWithOrigin(DEVELOPMENT_API_ORIGIN, 2);
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(400);
   });
 
   it('Origin が無い POST は 403 です', async () => {
@@ -68,7 +68,7 @@ describe('Origin の確認（本番の設定：APP_ENV=production）', () => {
       }),
       productionEnv,
     );
-    expect(response.status).toBe(501);
+    expect(response.status).toBe(400);
   });
 
   it('本番では、開発の Origin（localhost:3000）からの POST は 403 です', async () => {
