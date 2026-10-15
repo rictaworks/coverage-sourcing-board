@@ -8,6 +8,8 @@ config/master.key
 *.pem
 *.key
 !*.pub.key
+.dev.vars
+.dev.vars.*
 
 # --- .claude/ の扱いはリポジトリの公開設定で決める ---
 # PUBLICリポジトリ：以下を有効化し、.claude/を丸ごと除外する（社内ノウハウの公開防止。questboardで実施済み）
@@ -77,3 +79,6 @@ Thumbs.db
 # --- テスト・カバレッジ ---
 coverage/
 .rspec_status
+
+# --- Cloudflare Workers（ローカルの状態） ---
+.wrangler/
