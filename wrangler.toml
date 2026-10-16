@@ -37,7 +37,7 @@ crons = ["0 18 * * *"]
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "coverage-sourcing-board"
-database_id = "00000000-0000-0000-0000-000000000000"  # 仮の値。本番の D1 を作成後に人が置き換える
+database_id = "874886c8-bebf-4d96-a596-99d1d107971f"  # 本番の D1（2026-10-16 作成）
 migrations_dir = "migrations"
 
 [[env.production.ratelimits]]
