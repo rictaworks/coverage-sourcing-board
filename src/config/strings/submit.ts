@@ -46,7 +46,7 @@ export const SUBMIT_STRINGS = {
   reviewItemsHeading: '要確認の項目',
   reviewItemsNone: '要確認の項目はありません。',
   prefillFailed: '元の投稿の情報を読み込めませんでした。市町村と撮影月を入力してください。',
-  resubmitMonthNote: '撮影月は、元の投稿の情報に含まれないため、もう一度選んでください。',
+  resubmitMonthNote: '撮影月は、元の投稿の撮影月を初期値として入れています。違うときは、選び直してください。',
   acceptedAgain: '続けて投稿する',
   subjectHeading: '被写体の推定（補助）',
   subjectNote: '被写体の推定は補助です。判定の根拠にはしません。',
@@ -66,6 +66,7 @@ export const SUBMIT_STRINGS = {
 export const SUBMIT_DEV_ERRORS = {
   browserCheckMissing: '一次判定の結果に、次の項目がありません: ',
   capitalMissing: '県庁所在地の座標が、県の一覧と対応していません。',
+  honeypotMissing: 'ハニーポット欄が見つかりません。画面の構成が崩れているため、送信しません。',
   cellCoverageMissing: '充足の応答に、キャンペーンのマスが見つかりません。',
 } as const;
 

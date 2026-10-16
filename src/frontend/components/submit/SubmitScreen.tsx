@@ -22,6 +22,7 @@ import {
   type FormField,
   type SubmitFormValues,
 } from '../../lib/submit/runChecks';
+import { HoneypotReader } from '../../lib/submit/honeypotReader';
 import { ResubmitPrefill } from '../../lib/submit/resubmitPrefill';
 import { SubmitApi, SubmitApiError, type ServerReason, type SubmissionAccepted } from '../../lib/submit/submitApi';
 import { ErrorMessage } from '../common/ErrorMessage';
@@ -81,6 +82,7 @@ export function SubmitScreen() {
     rules: new SubmitFormRules(),
     submitApi: new SubmitApi(),
     prefill: new ResubmitPrefill(),
+    honeypot: new HoneypotReader(),
   }));
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [photoKey, setPhotoKey] = useState(0);
@@ -93,7 +95,7 @@ export function SubmitScreen() {
   const sendingRef = useRef(false);
   const honeypotRef = useRef<HTMLInputElement | null>(null);
 
-  /** 再投稿の元の投稿（mine API）から、市町村の初期値を入れます。撮影月は応答に無いため空のままです。 */
+  /** 再投稿の元の投稿（mine API）から、市町村の初期値を入れます。撮影月は、応答が返していれば初期値にし、無ければ空のままです。 */
   const prefillFromOrigin = useCallback(
     async (campaign: CampaignDetailView): Promise<void> => {
       try {
@@ -103,7 +105,12 @@ export function SubmitScreen() {
           setNotice(SUBMIT_STRINGS.prefillFailed);
           return;
         }
-        setValues((current) => (current.areaId === '' ? { ...current, areaId } : current));
+        const month = services.prefill.monthOf(mine, resubmitFrom);
+        setValues((current) => ({
+          ...current,
+          areaId: current.areaId === '' ? areaId : current.areaId,
+          shotMonth: current.shotMonth === '' && month !== null ? String(month) : current.shotMonth,
+        }));
       } catch {
         setNotice(SUBMIT_STRINGS.prefillFailed);
       }
@@ -245,7 +252,7 @@ export function SubmitScreen() {
         checks: checker.toBrowserChecks(judged.results),
         declaredOriginal: judged.declaredOriginal,
         consent: judged.consent,
-        honeypot: honeypotRef.current?.value ?? '',
+        honeypot: services.honeypot.read(honeypotRef),
         resubmittedFrom: resubmitFrom === '' ? null : resubmitFrom,
       });
       setSend({ kind: 'accepted', accepted });

@@ -162,3 +162,30 @@ describe('SubmitApi のハニーポット', () => {
     expect(called).toBe(0);
   });
 });
+
+describe('SubmitApi の checks の検証', () => {
+  const accepted = (checks: unknown) => ({ id: 'sub-1', status: 'pending_review', checks, subject: { status: 'none' } });
+
+  it('checks の要素が item・verdict・reasonCode を満たさなければ、形式の誤りの例外にする', async () => {
+    const badChecks: unknown[] = [
+      [null],
+      [{ item: 'focus', verdict: 'pass' }],
+      [{ item: 'unknown_item', verdict: 'pass', reasonCode: 'passed' }],
+      [{ item: 'focus', verdict: 'great', reasonCode: 'passed' }],
+      [{ item: 'focus', verdict: 'pass', reasonCode: 1 }],
+    ];
+    for (const checks of badChecks) {
+      const { fetcher } = fakeFetch(201, accepted(checks));
+      const error = await new SubmitApi(fetcher).submit(payload()).catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(SubmitApiError);
+      expect((error as SubmitApiError).code).toBe('malformed_response');
+    }
+  });
+
+  it('正しい checks はそのまま受け取る', async () => {
+    const checks = [{ item: 'duplicate_image', verdict: 'review', reasonCode: 'x' }];
+    const { fetcher } = fakeFetch(201, accepted(checks));
+    const result = await new SubmitApi(fetcher).submit(payload());
+    expect(result.checks).toEqual(checks);
+  });
+});
