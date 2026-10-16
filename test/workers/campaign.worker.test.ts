@@ -394,18 +394,40 @@ describe('区分値の追加（POST /api/campaign/areas）', { timeout: WORKER_T
   it('区分値の件数が上限（areasMax）に達すると、追加は 400 を返し、行は増えません', async () => {
     const session = await newSession();
     await loadTemplate(session);
-    const room = CAMPAIGN_API_CONFIG.areasMax - 21;
-    for (let index = 0; index < room; index += 1) {
-      const response = await call('POST', '/api/campaign/areas', session, {
-        areas: [{ prefecture: 'kochi', label: `Extra Area ${index}` }],
-      });
-      expect(response.status).toBe(201);
+    // 上限の手前（残り 1 件）までは D1 に直接入れる（API を 29 回直列に呼ぶと、負荷でタイムアウトするため）。
+    const campaign = await env.DB.prepare('SELECT id FROM campaign WHERE session_id = ?').bind(session.hash).first<{ id: string }>();
+    expect(campaign).not.toBeNull();
+    const fill = CAMPAIGN_API_CONFIG.areasMax - 1 - 21;
+    const periods = await env.DB.prepare('SELECT id FROM period WHERE session_id = ?').bind(session.hash).all<{ id: string }>();
+    const statements = [];
+    for (let index = 0; index < fill; index += 1) {
+      const areaId = `fill-${index}`;
+      statements.push(
+        env.DB.prepare(
+          `INSERT INTO area (id, session_id, campaign_id, prefecture, label, normalized) VALUES (?, ?, ?, 'kochi', ?, ?)`,
+        ).bind(areaId, session.hash, campaign!.id, `Fill Area ${index}`, `Fill Area ${index}`),
+      );
+      for (const period of periods.results) {
+        statements.push(
+          env.DB.prepare('INSERT INTO cell (id, session_id, area_id, period_id, required) VALUES (?, ?, ?, ?, 1)').bind(
+            `${areaId}:${period.id}`,
+            session.hash,
+            areaId,
+            period.id,
+          ),
+        );
+      }
     }
+    await env.DB.batch(statements);
+    expect(await countRows('area', session.hash)).toBe(CAMPAIGN_API_CONFIG.areasMax - 1);
+    // 上限ちょうどまでの最後の 1 件は、API で追加できる。
+    const last = await call('POST', '/api/campaign/areas', session, { areas: [{ prefecture: 'kochi', label: 'Last Allowed' }] });
+    expect(last.status).toBe(201);
     const over = await call('POST', '/api/campaign/areas', session, { areas: [{ prefecture: 'kochi', label: 'One Too Many' }] });
     expect(over.status).toBe(400);
     expect(((await over.json()) as { message: string }).message).toBe(CAMPAIGN_API_ERROR_MESSAGES.area_limit_exceeded);
     expect(await countRows('area', session.hash)).toBe(CAMPAIGN_API_CONFIG.areasMax);
-  }, 60_000);
+  });
 
   it('都道府県の値が正しくないとき、または 1 件でないときは 400 を返します', async () => {
     const session = await newSession();

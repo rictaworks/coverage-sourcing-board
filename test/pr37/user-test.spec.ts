@@ -19,7 +19,7 @@ const API_URL = 'http://localhost:8787';
 const ORIGIN_HEADER = { origin: FRONT_URL };
 const SVG_URL = new URL('../fixtures/images/sample.svg', import.meta.url);
 /** 投稿の上限（レート制限）を避けるため、要求ごとに別の接続元の値を使う。 */
-const uniqueIp = (): string => randomBytes(8).toString('hex');
+const uniqueIp = (): string => Buffer.from(randomBytes(8)).toString('hex');
 
 interface CellInfo {
   readonly cellId: string;
@@ -72,7 +72,7 @@ function passingChecks(): { item: string; verdict: string; reasonCode: string }[
 
 /** 16 文字の 16 進のハッシュ（既存の投稿と近くならないよう、要求ごとにランダムにする）。 */
 function randomPhash(): string {
-  return randomBytes(8).toString('hex');
+  return Buffer.from(randomBytes(8)).toString('hex');
 }
 
 test.describe('PR #37 ユーザーテスト手順（投稿の受け取りと検証の API）', () => {
