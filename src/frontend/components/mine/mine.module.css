@@ -1,0 +1,139 @@
+/* 自分の投稿の画面。色は :root のトークンだけを使う（テーマ「藍」・ライト固定）。幅は 375 px から崩れないようにします。 */
+
+.screen {
+  display: grid;
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.section {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.item {
+  min-width: 0;
+}
+
+.article {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background-color: var(--color-surface);
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  max-width: 14rem;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  background-color: var(--color-bg);
+}
+
+.body {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.status {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-accent);
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: var(--color-amber-bg);
+  color: var(--color-amber-text);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.fields {
+  display: grid;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.fields dt {
+  font-weight: 600;
+}
+
+.fields dd {
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.returnBox {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--color-review);
+  border-radius: 0.375rem;
+  background-color: var(--color-bg);
+}
+
+.button {
+  appearance: none;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.link {
+  display: inline-block;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:focus-visible,
+.button:focus-visible {
+  outline: 3px solid var(--color-amber-border);
+  outline-offset: 2px;
+}
+
+@media (min-width: 40rem) {
+  .article {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    align-items: start;
+  }
+}

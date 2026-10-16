@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
 import { PAGE_NAMES, PAGE_TITLES } from '../../../config/strings/layout';
-import { PendingPage } from '../../components/layout/PendingPage';
+import { MineScreen } from '../../components/mine/MineScreen';
+import styles from '../../components/mine/mine.module.css';
 
 export const metadata: Metadata = {
   title: PAGE_TITLES.mine,
 };
 
-/** 準備中の画面。後続の Issue がこの画面を置き換える。 */
+/** 自分の投稿の画面（requirements 4 章）。一覧は読み込んだ後に描画します。 */
 export default function MinePage() {
-  return <PendingPage title={PAGE_NAMES.mine} />;
+  return (
+    <section className={styles.screen}>
+      <h1>{PAGE_NAMES.mine}</h1>
+      <MineScreen />
+    </section>
+  );
 }
