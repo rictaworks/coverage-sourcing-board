@@ -1,17 +1,21 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { COMMON_STRINGS } from '../../../config/strings/common';
 import { PAGE_NAMES, PAGE_TITLES } from '../../../config/strings/layout';
-import { PrepareFlow } from '../../components/prepare/PrepareFlow';
+import { SubmitScreen } from '../../components/submit/SubmitScreen';
 
 export const metadata: Metadata = {
   title: PAGE_TITLES.submit,
 };
 
-/** 投稿の画面。現時点では、画像の整形の手順だけを置きます（入力欄と判定と送信は後続の Issue が足します）。 */
+/** 投稿の画面（写真・入力・一次判定・送信・判定結果）。判定結果は同じ画面に出します（独立した URL は作りません）。 */
 export default function SubmitPage() {
   return (
     <section>
       <h1>{PAGE_NAMES.submit}</h1>
-      <PrepareFlow />
+      <Suspense fallback={<p role="status">{COMMON_STRINGS.loading}</p>}>
+        <SubmitScreen />
+      </Suspense>
     </section>
   );
 }
