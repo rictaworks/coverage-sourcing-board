@@ -179,10 +179,19 @@ describe('MineApi（自分の投稿の API の読み込み）', () => {
     await expect(new MineApi(new ApiClient(fetcher)).load()).rejects.toBeInstanceOf(ApiError);
   });
 
-  it('キャンペーンの取得の失敗は、代わりの値を作らず例外として外に出します', async () => {
+  it('キャンペーンが無いとき（404 campaign_not_found）は、例外にせず読み込みを続けます', async () => {
     const fetcher: FetchLike = async (input) =>
       input === MINE_API_PATHS.campaign
         ? jsonResponse({ code: 'campaign_not_found', message: 'x' }, 404)
+        : jsonResponse(responseOf([]));
+    const view = await new MineApi(new ApiClient(fetcher)).load();
+    expect(view.items).toEqual([]);
+  });
+
+  it('キャンペーンの取得の失敗（キャンペーンが無い以外）は、代わりの値を作らず例外として外に出します', async () => {
+    const fetcher: FetchLike = async (input) =>
+      input === MINE_API_PATHS.campaign
+        ? jsonResponse({ code: 'internal_error', message: 'x' }, 500)
         : jsonResponse(responseOf([item({ id: 'a' })]));
     await expect(new MineApi(new ApiClient(fetcher)).load()).rejects.toBeInstanceOf(ApiError);
   });
