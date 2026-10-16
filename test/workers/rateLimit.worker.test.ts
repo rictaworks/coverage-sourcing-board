@@ -23,22 +23,15 @@ describe('レート制限（RATE_LIMITER のバインディング。10 秒に 5 
 
   it('上限を超えると 429（rate_limited）になり、それより前の応答は全て 400（形式の検査）です', async () => {
     const ip = testIp(120);
-    const maxAttempts = 12;
-    const statuses: number[] = [];
-    let limited: Response | null = null;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      const response = await postFrom(ip);
-      statuses.push(response.status);
-      if (response.status === 429) {
-        limited = response;
-        break;
-      }
-    }
-    expect(limited, `statuses: ${statuses.join(',')}`).not.toBeNull();
-    const before = statuses.slice(0, -1);
-    expect(before.length).toBeGreaterThan(0);
-    expect(before.every((status) => status === 400), `statuses: ${statuses.join(',')}`).toBe(true);
-    expect(((await limited!.json()) as { code: string }).code).toBe('rate_limited');
+    const attempts = 12;
+    // 窓の時間に依存しないよう、同時に送る（直列だと負荷で窓をまたぎ、429 にならないことがある）。
+    const responses = await Promise.all(Array.from({ length: attempts }, () => postFrom(ip)));
+    const statuses = responses.map((response) => response.status);
+    const limited = responses.filter((response) => response.status === 429);
+    expect(limited.length, `statuses: ${statuses.join(',')}`).toBeGreaterThan(0);
+    expect(statuses.every((status) => status === 400 || status === 429), `statuses: ${statuses.join(',')}`).toBe(true);
+    expect(statuses.filter((status) => status === 400).length, `statuses: ${statuses.join(',')}`).toBeGreaterThan(0);
+    expect(((await limited[0]!.json()) as { code: string }).code).toBe('rate_limited');
   });
 
   it('GET にはレート制限を適用しません（同じ IP から続けて呼んでも 200 です）', async () => {
