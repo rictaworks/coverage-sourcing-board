@@ -19,6 +19,19 @@ export function MineItem({ item }: { readonly item: MineItemView }) {
           {item.acceptedNotice === null ? null : <p className={styles.notice}>{item.acceptedNotice}</p>}
           <p className={styles.meta}>{item.shotMonthLabel}</p>
           <dl className={styles.fields}>
+            {item.cellUnknownNotice === null ? (
+              <>
+                <dt>{MINE_STRINGS.areaLabel}</dt>
+                <dd>{item.areaLabel}</dd>
+                <dt>{MINE_STRINGS.seasonLabel}</dt>
+                <dd>{item.seasonLabel}</dd>
+              </>
+            ) : (
+              <>
+                <dt>{MINE_STRINGS.areaLabel}</dt>
+                <dd role="alert">{item.cellUnknownNotice}</dd>
+              </>
+            )}
             <dt>{MINE_STRINGS.spotNameLabel}</dt>
             <dd>{item.spotName === '' ? MINE_STRINGS.emptyValue : item.spotName}</dd>
             <dt>{MINE_STRINGS.captionLabel}</dt>

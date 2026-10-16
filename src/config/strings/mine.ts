@@ -11,6 +11,9 @@ export const MINE_STRINGS = {
   emptyLinkLabel: '投稿の画面へ',
   imageAlt: '投稿した写真の縮小画像',
   shotMonthLabel: (month: number): string => `撮影月：${month}月`,
+  areaLabel: '市町村',
+  seasonLabel: '季節',
+  cellUnknown: '市町村と季節を特定できませんでした。',
   spotNameLabel: '地点名',
   captionLabel: '説明文',
   emptyValue: '（未入力）',
@@ -26,6 +29,7 @@ export const MINE_STRINGS = {
 /** 自分の投稿の API の経路。 */
 export const MINE_API_PATHS = {
   mine: '/api/submissions/mine',
+  campaign: '/api/campaign',
 } as const;
 
 /** 再投稿の導線（投稿の画面が、元の投稿の ID を読むための query）。 */

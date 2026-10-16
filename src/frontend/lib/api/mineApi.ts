@@ -1,4 +1,4 @@
-import type { MySubmissionItem, ReturnInfo } from '../../../core/api/contract';
+import type { AreaView, MySubmissionItem, PeriodView, ReturnInfo } from '../../../core/api/contract';
 import type { SubmissionStatus } from '../../../core/types';
 import { RETURN_REASON_LABELS } from '../../../config/strings/returnReasons';
 import { STATUS_LABELS, STATUS_NOTICES } from '../../../config/strings/status';
@@ -18,6 +18,13 @@ export interface MineSubmissionsResponse {
   readonly items: readonly MineSubmissionItemResponse[];
 }
 
+/** 市町村・季節を引くための、キャンペーンの応答（GET /api/campaign の一部）。 */
+export interface MineCampaignLookup {
+  readonly areas: readonly AreaView[];
+  readonly periods: readonly PeriodView[];
+  readonly cells: readonly { readonly cellId: string; readonly areaId: string; readonly periodId: string }[];
+}
+
 /** 差し戻しの表示。再投稿できないときは resubmitHref を null にし、理由の文字で示す。 */
 export interface MineReturnView {
   readonly reasonLabel: string;
@@ -33,6 +40,10 @@ export interface MineItemView {
   readonly status: Exclude<SubmissionStatus, 'checking'>;
   readonly statusLabel: string;
   readonly acceptedNotice: string | null;
+  readonly areaLabel: string | null;
+  readonly seasonLabel: string | null;
+  /** マスを引けなかったときの明示的な文言（引けたときは null）。 */
+  readonly cellUnknownNotice: string | null;
   readonly shotMonthLabel: string;
   readonly spotName: string;
   readonly caption: string;
@@ -59,27 +70,42 @@ function imageSrcOf(id: string): string {
  * 並びは API の逆順（新しい順）にします。対応が取れない応答は、代わりの値を作らず例外にします。
  */
 export class MineViewBuilder {
-  build(response: MineSubmissionsResponse): MineView {
-    const items = [...response.items].reverse().map((entry) => this.itemOf(entry));
+  build(response: MineSubmissionsResponse, campaign: MineCampaignLookup): MineView {
+    const items = [...response.items].reverse().map((entry) => this.itemOf(entry, campaign));
     return { items };
   }
 
-  private itemOf(entry: MineSubmissionItemResponse): MineItemView {
+  private itemOf(entry: MineSubmissionItemResponse, campaign: MineCampaignLookup): MineItemView {
     if (entry.status === 'checking') {
       throw new Error(MINE_STRINGS.viewMismatch);
     }
     this.assertReturnInfo(entry);
+    const place = this.placeOf(entry.cellId, campaign);
     return {
       id: entry.id,
       status: entry.status,
       statusLabel: STATUS_LABELS[entry.status],
       acceptedNotice: entry.status === 'accepted' ? STATUS_NOTICES.noRealTransaction : null,
+      areaLabel: place?.areaLabel ?? null,
+      seasonLabel: place?.seasonLabel ?? null,
+      cellUnknownNotice: place === null ? MINE_STRINGS.cellUnknown : null,
       shotMonthLabel: MINE_STRINGS.shotMonthLabel(entry.shotMonth),
       spotName: entry.spotName,
       caption: entry.caption,
       imageSrc: imageSrcOf(entry.id),
       returnView: entry.returnInfo === null ? null : this.returnViewOf(entry.id, entry.returnInfo),
     };
+  }
+
+  /** cellId から市町村と季節の表示名を引く。引けないときは null（代わりの値は作らない）。 */
+  private placeOf(cellId: string, campaign: MineCampaignLookup): { areaLabel: string; seasonLabel: string } | null {
+    const cell = campaign.cells.find((candidate) => candidate.cellId === cellId);
+    const area = cell === undefined ? undefined : campaign.areas.find((candidate) => candidate.id === cell.areaId);
+    const period = cell === undefined ? undefined : campaign.periods.find((candidate) => candidate.id === cell.periodId);
+    if (area === undefined || period === undefined) {
+      return null;
+    }
+    return { areaLabel: area.label, seasonLabel: period.label };
   }
 
   /** 差し戻しの内容は、差し戻しの状態のときだけ付く（状態と内容の対応が取れない応答は例外）。 */
@@ -114,6 +140,7 @@ export class MineApi {
 
   async load(): Promise<MineView> {
     const response = await this.client.get<MineSubmissionsResponse>(MINE_API_PATHS.mine);
-    return this.builder.build(response);
+    const campaign = await this.client.get<MineCampaignLookup>(MINE_API_PATHS.campaign);
+    return this.builder.build(response, campaign);
   }
 }
