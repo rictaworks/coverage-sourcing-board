@@ -3,7 +3,8 @@ import type { SubmissionStatus } from '../../../core/types';
 import { RETURN_REASON_LABELS } from '../../../config/strings/returnReasons';
 import { STATUS_LABELS, STATUS_NOTICES } from '../../../config/strings/status';
 import { MINE_API_PATHS, MINE_STRINGS, MINE_SUBMIT_LINK } from '../../../config/strings/mine';
-import { ApiClient } from '../apiClient';
+import { COVERAGE_API_CODES } from '../../../config/strings/coverage';
+import { ApiClient, ApiError } from '../apiClient';
 
 /** 自分の投稿の 1 件（契約の MySubmissionItem に、一覧の表示に要る項目を加えた応答）。 */
 export interface MineSubmissionItemResponse extends MySubmissionItem {
@@ -140,7 +141,22 @@ export class MineApi {
 
   async load(): Promise<MineView> {
     const response = await this.client.get<MineSubmissionsResponse>(MINE_API_PATHS.mine);
-    const campaign = await this.client.get<MineCampaignLookup>(MINE_API_PATHS.campaign);
+    const campaign = await this.loadCampaign();
     return this.builder.build(response, campaign);
+  }
+
+  /**
+   * キャンペーンが無いとき（404）は、空の対応表として扱う。投稿が無ければ一覧は空の案内になり、
+   * 投稿があれば、マスを引けなかった旨の文言が出る（代わりの値は作らない）。
+   */
+  private async loadCampaign(): Promise<MineCampaignLookup> {
+    try {
+      return await this.client.get<MineCampaignLookup>(MINE_API_PATHS.campaign);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404 && error.code === COVERAGE_API_CODES.campaignNotFound) {
+        return { areas: [], periods: [], cells: [] };
+      }
+      throw error;
+    }
   }
 }
