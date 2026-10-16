@@ -2,7 +2,8 @@ import { API_ENDPOINTS } from '../../../core/api/paths';
 import { SUBMISSION_FORM_FIELDS, type CheckSummary } from '../../../core/api/contract';
 import { COMMON_STRINGS } from '../../../config/strings/common';
 import { SUBJECT_KIND_LABELS } from '../../../config/strings/subjectHint';
-import type { SubjectKind } from '../../../core/types';
+import type { CheckItem, SubjectKind, Verdict } from '../../../core/types';
+import { BROWSER_CHECK_ITEMS } from '../../../config/submission';
 import { ApiError, MALFORMED_RESPONSE_CODE } from '../apiClient';
 import type { PreparedImage } from '../image/preparedImage';
 import type { BrowserCheckResult } from './runChecks';
@@ -132,9 +133,26 @@ export class SubmitApi {
     return {
       id: body.id,
       status: 'pending_review',
-      checks: body.checks as CheckSummary[],
+      checks: this.checksOf(body.checks),
       subject: this.subjectOf(body.subject),
     };
+  }
+
+  /** checks の要素ごとに item・verdict・reasonCode を検証します。合わなければ、型を当てずに例外にします。 */
+  private checksOf(value: unknown[]): CheckSummary[] {
+    return value.map((entry) => {
+      if (
+        !isRecord(entry) ||
+        typeof entry.item !== 'string' ||
+        !(CHECK_ITEMS as readonly string[]).includes(entry.item) ||
+        typeof entry.verdict !== 'string' ||
+        !(VERDICTS as readonly string[]).includes(entry.verdict) ||
+        typeof entry.reasonCode !== 'string'
+      ) {
+        throw new SubmitApiError(MALFORMED_RESPONSE_CODE, COMMON_STRINGS.errorHeading, 201);
+      }
+      return { item: entry.item as CheckItem, verdict: entry.verdict as Verdict, reasonCode: entry.reasonCode };
+    });
   }
 
   private subjectOf(value: unknown): SubjectView {
@@ -150,6 +168,10 @@ export class SubmitApi {
     throw new SubmitApiError(MALFORMED_RESPONSE_CODE, COMMON_STRINGS.errorHeading, 201);
   }
 }
+
+/** Worker が返しうる判定項目（ブラウザの項目と、Worker が判定する重複・被写体）。 */
+const CHECK_ITEMS = [...BROWSER_CHECK_ITEMS, 'duplicate_image', 'duplicate_spot', 'subject_kind'] as const satisfies readonly CheckItem[];
+const VERDICTS = ['pass', 'fail', 'review', 'info'] as const satisfies readonly Verdict[];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

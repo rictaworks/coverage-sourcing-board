@@ -32,8 +32,28 @@ describe('ResubmitPrefill（再投稿の初期値）', () => {
     expect(new ResubmitPrefill().areaIdOf(mine([{ id: 's1', cellId: 'unknown' }]), CAMPAIGN, 's1')).toBeNull();
   });
 
-  it('撮影月は応答に無いため、初期値を返さない（空のまま）', () => {
-    expect('shotMonth' in mine([{ id: 's1', cellId: 'cell-a-spring' }]).items[0]).toBe(false);
-    expect(new ResubmitPrefill().monthOf()).toBeNull();
+  it('応答が shotMonth を返していれば、元の投稿の撮影月を初期値にする', () => {
+    const response = {
+      items: [
+        { id: 's1', cellId: 'cell-a-spring', shotMonth: 4 },
+        { id: 's2', cellId: 'cell-b-summer', shotMonth: 7 },
+      ],
+    } as unknown as MySubmissionsResponse;
+    expect(new ResubmitPrefill().monthOf(response, 's2')).toBe(7);
+  });
+
+  it('応答に shotMonth が無いときは、推測せず null（空のまま）にする', () => {
+    expect(new ResubmitPrefill().monthOf(mine([{ id: 's1', cellId: 'cell-a-spring' }]), 's1')).toBeNull();
+  });
+
+  it('元の投稿が無いとき、または shotMonth が 1 から 12 の整数でないときは null にする', () => {
+    const bad = (shotMonth: unknown): MySubmissionsResponse =>
+      ({ items: [{ id: 's1', cellId: 'cell-a-spring', shotMonth }] }) as unknown as MySubmissionsResponse;
+    const prefill = new ResubmitPrefill();
+    expect(prefill.monthOf(bad(4), 'other')).toBeNull();
+    expect(prefill.monthOf(bad(0), 's1')).toBeNull();
+    expect(prefill.monthOf(bad(13), 's1')).toBeNull();
+    expect(prefill.monthOf(bad(4.5), 's1')).toBeNull();
+    expect(prefill.monthOf(bad('4'), 's1')).toBeNull();
   });
 });

@@ -1,9 +1,10 @@
-import type { MySubmissionsResponse } from '../../../core/api/contract';
+import type { MySubmissionItem, MySubmissionsResponse } from '../../../core/api/contract';
 import type { CampaignDetailView } from '../api/campaignApi';
 
 /**
  * 再投稿の初期値（Issue #17）。元の投稿は mine API の応答から ID で引きます。
- * 応答が持つのは cellId までで、撮影月は持ちません。撮影月は推測せず、空のままにします（SPEC/screen-submit.md）。
+ * Worker の mine API は、契約の項目に加えて shotMonth（撮影月）を返します（src/worker/routes/review.ts の MySubmissionView）。
+ * 撮影月は応答が返した値だけを使い、無いとき・範囲外のときは推測せず、空のままにします。
  */
 export class ResubmitPrefill {
   /** 元の投稿のマスの区分の ID。元の投稿またはマスが見つからなければ null（推測しません）。 */
@@ -16,8 +17,15 @@ export class ResubmitPrefill {
     return cell === undefined ? null : cell.areaId;
   }
 
-  /** 撮影月。mine API の応答に無いため、初期値は常に空（null）です。 */
-  monthOf(): null {
-    return null;
+  /** 撮影月の初期値。応答に shotMonth（1〜12 の整数）があるときだけ返し、無ければ null（空のまま）です。 */
+  monthOf(response: MySubmissionsResponse, submissionId: string): number | null {
+    const origin: (MySubmissionItem & { readonly shotMonth?: unknown }) | undefined = response.items.find(
+      (item) => item.id === submissionId,
+    );
+    if (origin === undefined) {
+      return null;
+    }
+    const month = origin.shotMonth;
+    return typeof month === 'number' && Number.isInteger(month) && month >= 1 && month <= 12 ? month : null;
   }
 }
