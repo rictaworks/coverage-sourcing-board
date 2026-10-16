@@ -150,3 +150,15 @@ describe('SubmitApi（送信）', () => {
     expect((error as SubmitApiError).code).toBe('malformed_response');
   });
 });
+
+describe('SubmitApi のハニーポット', () => {
+  it('ハニーポットに値があれば、送信せずに例外にする', async () => {
+    let called = 0;
+    const api = new SubmitApi(async () => {
+      called += 1;
+      return new Response('{}', { status: 201 });
+    });
+    await expect(api.submit(payload({ honeypot: 'http://spam.example' }))).rejects.toBeInstanceOf(SubmitApiError);
+    expect(called).toBe(0);
+  });
+});

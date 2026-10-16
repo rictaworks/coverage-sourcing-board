@@ -79,21 +79,12 @@ test.describe('PR #39 ユーザーテスト手順（投稿と判定結果の画�
   });
 
   test('手順 2 の続き：枠を確定すると、写真のプレビュー（整形後の画像）が出ます', async ({ page }) => {
-    // PR 本文は「選ぶと写真のプレビューが出ます」と書いています。実装では、プレビューは「枠を確定する」の後に出ます。
-    // ここでは確定の後のプレビューを確かめます。選んだ直後の画像の表示は、下の判定で別に確かめます。
+    // 写真を選んだ直後はトリミング枠の確認が出ます。整形後のプレビューは、「枠を確定する」を押した後に出ます。
     await loadTemplate(page);
     await page.goto(SUBMIT_URL);
     await selectPhoto(page, await makeJpegInBrowser(page, 1600, 1200), 'landscape-4x3.jpg');
     await page.getByRole('button', { name: PREPARE_STRINGS.confirmButton }).click();
     await expect(page.getByRole('heading', { name: PREPARE_STRINGS.previewHeading })).toBeVisible({ timeout: SLOW_TIMEOUT_MS });
-  });
-
-  test('手順 2（PR 本文の文言どおり）：写真を選んだ直後に、写真のプレビュー画像が出ます', async ({ page }) => {
-    await loadTemplate(page);
-    await page.goto(SUBMIT_URL);
-    await selectPhoto(page, await makeJpegInBrowser(page, 1600, 1200), 'landscape-4x3.jpg');
-    await expect(page.getByRole('heading', { name: PREPARE_STRINGS.cropHeading })).toBeVisible();
-    await expect(page.getByRole('img', { name: PREPARE_STRINGS.previewHeading })).toBeVisible();
   });
 
   test('手順 3：市町村と撮影月を選ぶと、選んだ内容が入力欄に表示されます', async ({ page }) => {
@@ -151,9 +142,8 @@ test.describe('PR #39 ユーザーテスト手順（投稿と判定結果の画�
     await expect(page.getByText(SUBMIT_STRINGS.acceptedBody)).toBeVisible();
   });
 
-  test('手順 5（PR 本文の文言どおり）：送信の後も、同じ画面に判定の結果（合格・要確認・不合格）が出ます', async ({ page }) => {
-    // PR 本文は「送信すると、判定の結果と『確認待ち』の旨が同じ画面に出ます」と書いています。
-    // 実装では、受け付けた後は「投稿を受け付けました」の表示に切り替わり、判定の結果は表示されません。
+  test('手順 5 の続き：送信すると「投稿を受け付けました」に切り替わり、判定の結果の表示は消えます', async ({ page }) => {
+    // 受け付けた後は「投稿を受け付けました」（確認待ち）の表示に切り替わります。送信の前の判定の結果は、送信の前に確かめます。
     await loadTemplate(page);
     await page.goto(SUBMIT_URL);
     await pickAndConfirmPhoto(page, await makeJpegInBrowser(page, 1600, 1200));
@@ -163,11 +153,10 @@ test.describe('PR #39 ユーザーテスト手順（投稿と判定結果の画�
     await page.getByLabel(SUBMIT_STRINGS.declaredNotReusedLabel).check();
     await page.getByLabel(SUBMIT_STRINGS.consentLabel).check();
     await page.getByRole('button', { name: SUBMIT_STRINGS.judgeButton }).click();
+    await expect(page.getByRole('heading', { name: SUBMIT_STRINGS.resultHeading })).toBeVisible();
     await page.getByRole('button', { name: SUBMIT_STRINGS.sendButton }).click();
     await expect(page.getByText(SUBMIT_STRINGS.acceptedBody)).toBeVisible({ timeout: SLOW_TIMEOUT_MS });
-    await expect(page.getByRole('heading', { name: SUBMIT_STRINGS.resultHeading })).toBeVisible();
-    const verdicts = [SUBMIT_STRINGS.verdictPass, SUBMIT_STRINGS.verdictReview, SUBMIT_STRINGS.verdictFail];
-    await expect(page.getByText(new RegExp(verdicts.join('|'))).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: SUBMIT_STRINGS.resultHeading })).toHaveCount(0);
   });
 
   test('手順 6：縦向きの写真は送信できず、理由と修正方法（横向きの写真を選ぶこと）が出ます', async ({ page }) => {

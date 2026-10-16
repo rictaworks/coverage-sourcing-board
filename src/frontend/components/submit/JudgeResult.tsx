@@ -4,6 +4,7 @@ import { faCircleCheck, faCircleXmark, faTriangleExclamation, type IconDefinitio
 import { CHECK_ITEM_LABELS, CHECK_REASON_TEXT } from '../../../config/strings/checks';
 import { SUBJECT_HINT_STRINGS, SUBJECT_KIND_LABELS } from '../../../config/strings/subjectHint';
 import { SUBMIT_STRINGS } from '../../../config/strings/submit';
+import type { CheckSummary } from '../../../core/api/contract';
 import type { CheckResult, Verdict } from '../../../core/types';
 import type { ServerReason, SubjectView } from '../../lib/submit/submitApi';
 import { Icon } from '../common/Icon';
@@ -41,7 +42,7 @@ export function JudgeResult({
   const failed = results.some((result) => result.verdict === 'fail');
   const summary = failed ? SUBMIT_STRINGS.summaryFail : results.some((result) => result.verdict === 'review') ? SUBMIT_STRINGS.summaryReview : SUBMIT_STRINGS.summaryPass;
   return (
-    <section className={styles.block} aria-labelledby="judge-heading">
+    <div>
       <h2 id="judge-heading" className={styles.heading}>
         {SUBMIT_STRINGS.resultHeading}
       </h2>
@@ -98,8 +99,39 @@ export function JudgeResult({
           </ul>
         </div>
       ) : null}
+    </div>
+  );
+}
 
-    </section>
+/** 受け付けの応答の checks のうち、要確認の項目（確認者が確かめます）。なければ案内の文言だけを示します。 */
+export function RequiredChecks({ checks }: { readonly checks: readonly CheckSummary[] }) {
+  const reviews = checks.filter((check) => check.verdict === 'review');
+  return (
+    <div className={styles.subject}>
+      <h3 className={styles.subHeading}>{SUBMIT_STRINGS.reviewItemsHeading}</h3>
+      {reviews.length === 0 ? (
+        <p>{SUBMIT_STRINGS.reviewItemsNone}</p>
+      ) : (
+        <ul className={styles.resultList}>
+          {reviews.map((check, index) => {
+            const text = reasonTextOf(check.reasonCode);
+            const label = itemLabelOf(check.item);
+            return (
+              <li key={`${check.item}-${check.reasonCode}-${index}`} className={styles.resultItem}>
+                <p className={styles.resultHead}>
+                  <span className={styles.verdictReview}>
+                    <Icon icon={faTriangleExclamation} />
+                    <span>{SUBMIT_STRINGS.verdictReview}</span>
+                  </span>
+                  {label !== null ? <span className={styles.itemName}>{label}</span> : null}
+                </p>
+                {text !== null ? <p className={styles.resultMessage}>{text.message}</p> : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 

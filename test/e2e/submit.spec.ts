@@ -2,7 +2,7 @@ import { expect, test, type Page, type Request } from '@playwright/test';
 import { CAMPAIGN_API_CONFIG } from '../../src/config/campaignApi';
 import { LIMITS } from '../../src/config/limits';
 import { API_ERROR_MESSAGES } from '../../src/config/strings/apiErrors';
-import { CHECK_REASON_TEXT } from '../../src/config/strings/checks';
+import { CHECK_ITEM_LABELS, CHECK_REASON_TEXT } from '../../src/config/strings/checks';
 import { PREPARE_ERROR_STRINGS, PREPARE_STRINGS } from '../../src/config/strings/prepare';
 import { SUBMIT_FORM_ERRORS, SUBMIT_STRINGS } from '../../src/config/strings/submit';
 
@@ -189,5 +189,78 @@ test.describe('投稿と判定結果の画面（D4）', () => {
     await expect(page.getByLabel(SUBMIT_STRINGS.monthLabel)).toBeVisible();
     await expect(page.getByLabel(SUBMIT_STRINGS.spotNameLabel)).toBeVisible();
     await expect(page.getByLabel(SUBMIT_STRINGS.captionLabel)).toBeVisible();
+  });
+
+  test('確認待ちの画面に、Worker の応答の要確認の項目が出ます', async ({ page }) => {
+    await loadTemplate(page);
+    await page.route('**/api/submissions', async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'mock-submission-1',
+          status: 'pending_review',
+          checks: [
+            { item: 'focus', verdict: 'review', reasonCode: 'focus_borderline' },
+            { item: 'format', verdict: 'pass', reasonCode: 'passed' },
+          ],
+          subject: { status: 'none', resumeNotice: null },
+        }),
+      });
+    });
+    await page.goto(SUBMIT_URL);
+    await preparePhoto(page, await makeJpegInBrowser(page, 1600, 1200));
+    await fillRequired(page);
+    await page.getByRole('button', { name: SUBMIT_STRINGS.judgeButton }).click();
+    await page.getByRole('button', { name: SUBMIT_STRINGS.sendButton }).click();
+    await expect(page.getByRole('heading', { name: SUBMIT_STRINGS.acceptedHeading })).toBeVisible({ timeout: SLOW_TIMEOUT_MS });
+    await expect(page.getByRole('heading', { name: SUBMIT_STRINGS.reviewItemsHeading })).toBeVisible();
+    await expect(page.getByText(CHECK_ITEM_LABELS.focus, { exact: true })).toBeVisible();
+    await expect(page.getByText(CHECK_REASON_TEXT.focus_borderline.message)).toBeVisible();
+  });
+
+  test('再投稿では、元の投稿のマスの市町村が初期値になり、撮影月は空のままです', async ({ page }) => {
+    await loadTemplate(page);
+    const campaign = await (await page.request.get(`${FRONT_URL}/api/campaign`)).json();
+    const cell = campaign.cells[0];
+    await page.route('**/api/submissions/mine', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          items: [
+            { id: 'origin-1', cellId: cell.cellId, status: 'returned', createdAt: '2026-10-16T00:00:00Z', returnInfo: null },
+          ],
+        }),
+      });
+    });
+    await page.goto(`${SUBMIT_URL}?resubmit=origin-1`);
+    await preparePhoto(page, await makeJpegInBrowser(page, 1600, 1200));
+    await expect(page.getByLabel(SUBMIT_STRINGS.areaLabel)).toHaveValue(cell.areaId);
+    await expect(page.getByLabel(SUBMIT_STRINGS.monthLabel)).toHaveValue('');
+  });
+
+  test('ハニーポットに値があれば、ブラウザは送信しません', async ({ page }) => {
+    await loadTemplate(page);
+    await page.goto(SUBMIT_URL);
+    await preparePhoto(page, await makeJpegInBrowser(page, 1600, 1200));
+    await fillRequired(page);
+    await page.getByRole('button', { name: SUBMIT_STRINGS.judgeButton }).click();
+    await page.locator('input[name="website_url"]').evaluate((element) => {
+      (element as unknown as { value: string }).value = 'http://spam.example';
+    });
+    const submissions: Request[] = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/api/submissions')) {
+        submissions.push(request);
+      }
+    });
+    await page.getByRole('button', { name: SUBMIT_STRINGS.sendButton }).click();
+    await expect(page.getByText(SUBMIT_STRINGS.sendFailed)).toBeVisible();
+    expect(submissions).toHaveLength(0);
   });
 });

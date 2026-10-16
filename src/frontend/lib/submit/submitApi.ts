@@ -7,6 +7,9 @@ import { ApiError, MALFORMED_RESPONSE_CODE } from '../apiClient';
 import type { PreparedImage } from '../image/preparedImage';
 import type { BrowserCheckResult } from './runChecks';
 
+/** ハニーポットに値があったため、送信しなかったことを示すコード。 */
+export const HONEYPOT_FILLED_CODE = 'honeypot_filled';
+
 /** 送信の入力（整形の結果・画面の入力・判定結果・ハニーポットの値）。 */
 export interface SubmitPayload {
   readonly prepared: PreparedImage;
@@ -91,6 +94,10 @@ export class SubmitApi {
   ) {}
 
   async submit(payload: SubmitPayload): Promise<SubmissionAccepted> {
+    if (payload.honeypot !== '') {
+      // ハニーポットに値があるときは送りません（人は入力しない欄です）。
+      throw new SubmitApiError(HONEYPOT_FILLED_CODE, COMMON_STRINGS.errorHeading, 0);
+    }
     const response = await this.fetcher(API_ENDPOINTS.submissionCreate.path, {
       method: API_ENDPOINTS.submissionCreate.method,
       credentials: 'same-origin',

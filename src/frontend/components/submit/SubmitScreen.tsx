@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_ENDPOINTS } from '../../../core/api/paths';
-import type { CoverageResponse } from '../../../core/api/contract';
+import type { CoverageResponse, MySubmissionsResponse } from '../../../core/api/contract';
 import { API_ERROR_MESSAGES } from '../../../config/strings/apiErrors';
 import { COMMON_STRINGS } from '../../../config/strings/common';
 import { SEASON_LABELS } from '../../../config/strings/checks';
@@ -22,9 +22,10 @@ import {
   type FormField,
   type SubmitFormValues,
 } from '../../lib/submit/runChecks';
+import { ResubmitPrefill } from '../../lib/submit/resubmitPrefill';
 import { SubmitApi, SubmitApiError, type ServerReason, type SubmissionAccepted } from '../../lib/submit/submitApi';
 import { ErrorMessage } from '../common/ErrorMessage';
-import { JudgeResult, SubjectNote } from './JudgeResult';
+import { JudgeResult, RequiredChecks, SubjectNote } from './JudgeResult';
 import { PhotoStep } from './PhotoStep';
 import { SubmitForm, type FieldErrors } from './SubmitForm';
 import styles from './submit.module.css';
@@ -79,6 +80,7 @@ export function SubmitScreen() {
     checker: new SubmissionChecker(),
     rules: new SubmitFormRules(),
     submitApi: new SubmitApi(),
+    prefill: new ResubmitPrefill(),
   }));
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [photoKey, setPhotoKey] = useState(0);
@@ -90,6 +92,24 @@ export function SubmitScreen() {
   const [send, setSend] = useState<SendState>({ kind: 'idle' });
   const sendingRef = useRef(false);
   const honeypotRef = useRef<HTMLInputElement | null>(null);
+
+  /** 再投稿の元の投稿（mine API）から、市町村の初期値を入れます。撮影月は応答に無いため空のままです。 */
+  const prefillFromOrigin = useCallback(
+    async (campaign: CampaignDetailView): Promise<void> => {
+      try {
+        const mine = await services.client.get<MySubmissionsResponse>(API_ENDPOINTS.submissionsMine.path);
+        const areaId = services.prefill.areaIdOf(mine, campaign, resubmitFrom);
+        if (areaId === null) {
+          setNotice(SUBMIT_STRINGS.prefillFailed);
+          return;
+        }
+        setValues((current) => (current.areaId === '' ? { ...current, areaId } : current));
+      } catch {
+        setNotice(SUBMIT_STRINGS.prefillFailed);
+      }
+    },
+    [services, resubmitFrom],
+  );
 
   const loadData = useCallback(async (): Promise<void> => {
     setLoad({ kind: 'loading' });
@@ -104,10 +124,13 @@ export function SubmitScreen() {
       if (areaParam !== '' && campaign.areas.some((area) => area.id === areaParam)) {
         setValues((current) => (current.areaId === '' ? { ...current, areaId: areaParam } : current));
       }
+      if (resubmitFrom !== '') {
+        await prefillFromOrigin(campaign);
+      }
     } catch {
       setLoad({ kind: 'error' });
     }
-  }, [services, areaParam]);
+  }, [services, areaParam, resubmitFrom, prefillFromOrigin]);
 
   useEffect(() => {
     void loadData();
@@ -245,6 +268,7 @@ export function SubmitScreen() {
         </h2>
         <p role="status">{SUBMIT_STRINGS.acceptedBody}</p>
         <p className={styles.help}>{SUBMIT_STRINGS.acceptedIdLine(send.accepted.id)}</p>
+        <RequiredChecks checks={send.accepted.checks} />
         <SubjectNote subject={send.accepted.subject} />
         <button type="button" className={styles.button} onClick={() => resetPhoto(false)}>
           {SUBMIT_STRINGS.acceptedAgain}
@@ -257,7 +281,12 @@ export function SubmitScreen() {
   return (
     <div className={styles.flow}>
       <p>{SUBMIT_STRINGS.lead}</p>
-      {resubmitFrom !== '' ? <p className={styles.notice}>{SUBMIT_STRINGS.resubmitNotice}</p> : null}
+      {resubmitFrom !== '' ? (
+        <>
+          <p className={styles.notice}>{SUBMIT_STRINGS.resubmitNotice}</p>
+          <p className={styles.help}>{SUBMIT_STRINGS.resubmitMonthNote}</p>
+        </>
+      ) : null}
 
       <PhotoStep key={photoKey} onPreparedChange={handlePrepared} />
 
