@@ -37,6 +37,13 @@
 
 .nav {
   display: flex;
+  align-items: center;
+}
+
+.topLink {
+  margin-right: 1rem;
+  color: var(--color-accent);
+  text-decoration: none;
 }
 
 .backLink {

@@ -12,6 +12,9 @@ export function SiteHeader() {
           {APP_STRINGS.pageTitle}
         </Link>
         <nav className={styles.nav} aria-label={LAYOUT_STRINGS.headerNavLabel}>
+          <Link href="/" className={styles.topLink}>
+            {LAYOUT_STRINGS.backToTop}
+          </Link>
           <a className={styles.backLink} href={LAYOUT_STRINGS.backToDemoListHref}>
             {LAYOUT_STRINGS.backToDemoList}
           </a>
