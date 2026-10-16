@@ -12,5 +12,5 @@
     "skipLibCheck": true
   },
   "include": ["src/config", "src/worker", "src/core", "test", "vitest.config.ts", "playwright.config.ts"],
-  "exclude": ["node_modules", "src/frontend", "test/unit/frontend/areaAddForm.test.ts", "out", ".next", ".wrangler"]
+  "exclude": ["node_modules", "src/frontend", "test/unit/frontend/areaAddForm.test.ts", "test/unit/frontend/returnDialog.test.ts", "out", ".next", ".wrangler"]
 }
